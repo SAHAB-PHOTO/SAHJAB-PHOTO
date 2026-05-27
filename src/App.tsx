@@ -1,51 +1,82 @@
 import { Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { Layout } from "./components/Layout";
+import { SellerLayout } from "./components/SellerLayout";
+
+// Public landing
 import Landing from "./pages/Landing";
-import Browse from "./pages/Browse";
-import ProductDetail from "./pages/ProductDetail";
-import ShopPage from "./pages/ShopPage";
-import ShopsList from "./pages/ShopsList";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import OrderTracking from "./pages/OrderTracking";
-import Account from "./pages/Account";
-import Favorites from "./pages/Favorites";
-import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
-import OtpVerify from "./pages/auth/OtpVerify";
-import Forgot from "./pages/auth/Forgot";
-import SellerOnboarding from "./pages/seller/Onboarding";
-import SellerDashboard from "./pages/seller/Dashboard";
-import AdminDashboard from "./pages/admin/Dashboard";
+
+// Lazy-loaded chunks to keep initial bundle small
+const Browse = lazy(() => import("./pages/Browse"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const ShopPage = lazy(() => import("./pages/ShopPage"));
+const ShopsList = lazy(() => import("./pages/ShopsList"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const OrderTracking = lazy(() => import("./pages/OrderTracking"));
+const Account = lazy(() => import("./pages/Account"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+
+const SignIn = lazy(() => import("./pages/auth/SignIn"));
+const SignUp = lazy(() => import("./pages/auth/SignUp"));
+const OtpVerify = lazy(() => import("./pages/auth/OtpVerify"));
+const Forgot = lazy(() => import("./pages/auth/Forgot"));
+
+const SellerOnboarding = lazy(() => import("./pages/seller/Onboarding"));
+const SellerDashboard = lazy(() => import("./pages/seller/Dashboard"));
+const SellerProducts = lazy(() => import("./pages/seller/Products"));
+const SellerOrders = lazy(() => import("./pages/seller/Orders"));
+const SellerEarnings = lazy(() => import("./pages/seller/Earnings"));
+const SellerShopSettings = lazy(() => import("./pages/seller/ShopSettings"));
+
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+
+function PageLoader() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-2 border-gold-500/30 border-t-gold-500 animate-spin" />
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <Routes>
-      {/* Auth routes — no layout */}
-      <Route path="/auth/signin" element={<SignIn />} />
-      <Route path="/auth/signup" element={<SignUp />} />
-      <Route path="/auth/otp" element={<OtpVerify />} />
-      <Route path="/auth/forgot" element={<Forgot />} />
-      <Route path="/seller/onboarding" element={<SellerOnboarding />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Auth & onboarding — full-page, no shell */}
+        <Route path="/auth/signin" element={<SignIn />} />
+        <Route path="/auth/signup" element={<SignUp />} />
+        <Route path="/auth/otp" element={<OtpVerify />} />
+        <Route path="/auth/forgot" element={<Forgot />} />
+        <Route path="/seller/onboarding" element={<SellerOnboarding />} />
 
-      {/* Layout-wrapped routes */}
-      <Route element={<Layout />}>
-        <Route index element={<Landing />} />
-        <Route path="/browse" element={<Browse />} />
-        <Route path="/shops" element={<ShopsList />} />
-        <Route path="/shop/:slug" element={<ShopPage />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order/:id" element={<OrderTracking />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/account/*" element={<Account />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/seller/dashboard" element={<SellerDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+        {/* Seller back-office — sidebar shell */}
+        <Route element={<SellerLayout />}>
+          <Route path="/seller/dashboard" element={<SellerDashboard />} />
+          <Route path="/seller/products" element={<SellerProducts />} />
+          <Route path="/seller/orders" element={<SellerOrders />} />
+          <Route path="/seller/earnings" element={<SellerEarnings />} />
+          <Route path="/seller/shop" element={<SellerShopSettings />} />
+        </Route>
+
+        {/* Public marketplace — header/footer shell */}
+        <Route element={<Layout />}>
+          <Route index element={<Landing />} />
+          <Route path="/browse" element={<Browse />} />
+          <Route path="/shops" element={<ShopsList />} />
+          <Route path="/shop/:slug" element={<ShopPage />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order/:id" element={<OrderTracking />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/account/*" element={<Account />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }
 
