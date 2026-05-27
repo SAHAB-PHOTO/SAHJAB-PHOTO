@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سلة الطلبات - طلبات الجزائر</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="main-header sticky">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <span class="logo-text">طلبات<span class="logo-dz">الجزائر</span></span>
+                    <span class="flag">🇩🇿</span>
+                </a>
+                <div class="nav-actions">
+                    <a href="restaurants.html" class="nav-link"><i class="fas fa-arrow-right"></i> كمل التسوق</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumb-bar">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">الرئيسية</a>
+                <i class="fas fa-chevron-left"></i>
+                <a href="restaurants.html">المطاعم</a>
+                <i class="fas fa-chevron-left"></i>
+                <span>إتمام الطلب</span>
+            </div>
+        </div>
+    </div>
+
+    <section class="checkout-section">
+        <div class="container">
+            <h1 class="page-title">إتمام طلبك 🛍️</h1>
+
+            <div class="checkout-layout">
+                <div class="checkout-main">
+                    <!-- Cart Items -->
+                    <div class="checkout-card">
+                        <h3><i class="fas fa-shopping-basket"></i> أكلاتك</h3>
+                        <div id="cartItemsList">
+                            <div class="empty-cart">
+                                <div class="empty-icon">🛒</div>
+                                <p>سلتك فارغة</p>
+                                <small>روح زيد بعض الأكلات الزينة</small>
+                                <a href="restaurants.html" class="btn-primary">شوف المطاعم</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address -->
+                    <div class="checkout-card" id="deliveryCard" style="display:none;">
+                        <h3><i class="fas fa-map-marker-alt"></i> عنوان التوصيل</h3>
+                        <form class="address-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>الاسم الكامل</label>
+                                    <input type="text" placeholder="محمد بن علي" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>رقم الهاتف</label>
+                                    <input type="tel" placeholder="0555 12 34 56" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>الولاية</label>
+                                    <select required>
+                                        <option>الجزائر العاصمة</option>
+                                        <option>وهران</option>
+                                        <option>قسنطينة</option>
+                                        <option>عنابة</option>
+                                        <option>سطيف</option>
+                                        <option>تلمسان</option>
+                                        <option>باتنة</option>
+                                        <option>بجاية</option>
+                                        <option>ورقلة</option>
+                                        <option>تيزي وزو</option>
+                                        <option>غرداية</option>
+                                        <option>تمنراست</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>البلدية</label>
+                                    <input type="text" placeholder="باب الزوار" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>العنوان بالتفصيل</label>
+                                <textarea placeholder="حي 5 جويلية، عمارة B، طابق 3، باب رقم 12..." rows="3" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>ملاحظات للموصّل (اختياري)</label>
+                                <textarea placeholder="مثلا : الجرس مكسور، تكلّمني تليفون قبل ما توصل..." rows="2"></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="checkout-card" id="paymentCard" style="display:none;">
+                        <h3><i class="fas fa-credit-card"></i> طريقة الدفع</h3>
+                        <div class="payment-options">
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="cash" checked>
+                                <div class="payment-info">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    <div>
+                                        <strong>الدفع كاش عند التوصيل</strong>
+                                        <small>ادفع نقدا للموصّل</small>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="cib">
+                                <div class="payment-info">
+                                    <span class="payment-badge-large">CIB</span>
+                                    <div>
+                                        <strong>بطاقة CIB</strong>
+                                        <small>الدفع بالبطاقة البنكية الذهبية</small>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="edahabia">
+                                <div class="payment-info">
+                                    <span class="payment-badge-large">Edahabia</span>
+                                    <div>
+                                        <strong>بطاقة الذهبية - بريد الجزائر</strong>
+                                        <small>الدفع ببطاقة الذهبية</small>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="payment-option">
+                                <input type="radio" name="payment" value="baridimob">
+                                <div class="payment-info">
+                                    <span class="payment-badge-large">📱</span>
+                                    <div>
+                                        <strong>BaridiMob</strong>
+                                        <small>الدفع عن طريق تطبيق بريدي موب</small>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <aside class="checkout-summary" id="checkoutSummary" style="display:none;">
+                    <h3>ملخص الطلب</h3>
+                    <div class="summary-row">
+                        <span>المجموع الفرعي :</span>
+                        <strong id="cartSubtotal">0 دج</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>التوصيل :</span>
+                        <strong id="cartDelivery">200 دج</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>الرسوم :</span>
+                        <strong id="cartFees">50 دج</strong>
+                    </div>
+                    <hr>
+                    <div class="summary-row total">
+                        <span>الإجمالي :</span>
+                        <strong id="cartTotal">0 دج</strong>
+                    </div>
+                    <div class="promo-code">
+                        <input type="text" placeholder="عندك كود تخفيض ؟">
+                        <button>تطبيق</button>
+                    </div>
+                    <button class="btn-primary btn-block btn-large" onclick="placeOrder()">
+                        أكّد الطلب <i class="fas fa-check-circle"></i>
+                    </button>
+                    <p class="terms-note">
+                        بالضغط على "أكّد الطلب" انت توافق على
+                        <a href="#">شروط الاستخدام</a>
+                    </p>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="success-icon">✅</div>
+            <h2>مبروك ! طلبك تم بنجاح</h2>
+            <p>وصلنا طلبك ورانا نحضرولك. الموصّل غايجيك في غضون <strong>30-45 دقيقة</strong></p>
+            <div class="order-number">رقم الطلب : <strong id="orderNumber">#DZ-2026-0001</strong></div>
+            <a href="index.html" class="btn-primary">رجوع للرئيسية</a>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 طلبات الجزائر 🇩🇿</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCartPage();
+        });
+    </script>
+</body>
+</html>

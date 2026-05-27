@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المطاعم - طلبات الجزائر</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="main-header sticky">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <span class="logo-text">طلبات<span class="logo-dz">الجزائر</span></span>
+                    <span class="flag">🇩🇿</span>
+                </a>
+                <div class="nav-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="ابحث على مطعم، أكلة..." id="searchInput">
+                    <select class="city-select" id="citySelect">
+                        <option>الجزائر العاصمة</option>
+                        <option>وهران</option>
+                        <option>قسنطينة</option>
+                        <option>عنابة</option>
+                        <option>سطيف</option>
+                        <option>تلمسان</option>
+                        <option>باتنة</option>
+                        <option>بجاية</option>
+                    </select>
+                </div>
+                <div class="nav-actions">
+                    <a href="#" class="nav-link"><i class="fas fa-user"></i> دخول</a>
+                    <a href="cart.html" class="nav-cart">
+                        <i class="fas fa-shopping-basket"></i>
+                        <span class="cart-count">0</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-bar">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="index.html">الرئيسية</a>
+                <i class="fas fa-chevron-left"></i>
+                <span>المطاعم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Restaurants -->
+    <section class="restaurants-page">
+        <div class="container">
+            <div class="page-layout">
+                <!-- Sidebar Filters -->
+                <aside class="filters-sidebar">
+                    <h3><i class="fas fa-filter"></i> صفّي البحث</h3>
+
+                    <div class="filter-group">
+                        <h4>التصنيفات</h4>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="all" checked> كل التصنيفات</label>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="جزائري"> أكل جزائري تقليدي</label>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="فاست فود"> فاست فود</label>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="بيتزا"> بيتزا</label>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="حلويات"> حلويات</label>
+                        <label class="filter-check"><input type="checkbox" data-filter="category" value="قهوة"> قهوة ومشروبات</label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4>السعر</h4>
+                        <label class="filter-check"><input type="radio" name="price" value="all" checked> الكل</label>
+                        <label class="filter-check"><input type="radio" name="price" value="cheap"> رخيص (أقل من 500 دج)</label>
+                        <label class="filter-check"><input type="radio" name="price" value="medium"> متوسط (500-1500 دج)</label>
+                        <label class="filter-check"><input type="radio" name="price" value="expensive"> غالي (+1500 دج)</label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4>التقييم</h4>
+                        <label class="filter-check"><input type="checkbox"> ⭐ 4.5 وأكثر</label>
+                        <label class="filter-check"><input type="checkbox"> ⭐ 4.0 وأكثر</label>
+                        <label class="filter-check"><input type="checkbox"> ⭐ 3.5 وأكثر</label>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4>الخدمات</h4>
+                        <label class="filter-check"><input type="checkbox"> توصيل مجاني</label>
+                        <label class="filter-check"><input type="checkbox"> مفتوح الآن</label>
+                        <label class="filter-check"><input type="checkbox"> عروض وتخفيضات</label>
+                        <label class="filter-check"><input type="checkbox"> حلال 100%</label>
+                    </div>
+
+                    <button class="btn-secondary btn-block" onclick="resetFilters()">صفّر الفلتر</button>
+                </aside>
+
+                <!-- Main Content -->
+                <div class="restaurants-main">
+                    <div class="results-bar">
+                        <h2><span id="resultsCount">0</span> مطعم متوفر في <span id="currentCity">الجزائر العاصمة</span></h2>
+                        <div class="sort-by">
+                            <label>ترتيب :</label>
+                            <select id="sortSelect">
+                                <option value="popular">الأكثر طلبا</option>
+                                <option value="rating">أحسن تقييم</option>
+                                <option value="delivery">أسرع توصيل</option>
+                                <option value="price-low">السعر : من الأرخص</option>
+                                <option value="price-high">السعر : من الأغلى</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="restaurants-grid" id="restaurantsList">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 طلبات الجزائر - كل الحقوق محفوظة 🇩🇿</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRestaurants('restaurantsList', restaurants);
+            document.getElementById('resultsCount').textContent = restaurants.length;
+
+            document.getElementById('searchInput').addEventListener('input', filterRestaurants);
+            document.getElementById('citySelect').addEventListener('change', filterRestaurants);
+            document.getElementById('sortSelect').addEventListener('change', filterRestaurants);
+            document.querySelectorAll('[data-filter="category"]').forEach(el => {
+                el.addEventListener('change', filterRestaurants);
+            });
+        });
+    </script>
+</body>
+</html>
