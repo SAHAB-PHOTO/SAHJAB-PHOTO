@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { Layout } from "./components/Layout";
 import { SellerLayout } from "./components/SellerLayout";
+import { AdminLayout } from "./components/AdminLayout";
 
 // Public landing
 import Landing from "./pages/Landing";
@@ -30,6 +31,12 @@ const SellerEarnings = lazy(() => import("./pages/seller/Earnings"));
 const SellerShopSettings = lazy(() => import("./pages/seller/ShopSettings"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const AdminSellers = lazy(() => import("./pages/admin/Sellers"));
+const AdminUsers = lazy(() => import("./pages/admin/Users"));
+const AdminCategories = lazy(() => import("./pages/admin/Categories"));
+const AdminCommissions = lazy(() => import("./pages/admin/Commissions"));
+const AdminDisputes = lazy(() => import("./pages/admin/Disputes"));
+const AdminReports = lazy(() => import("./pages/admin/Reports"));
 
 function PageLoader() {
   return (
@@ -59,6 +66,17 @@ export default function App() {
           <Route path="/seller/shop" element={<SellerShopSettings />} />
         </Route>
 
+        {/* Admin back-office — sidebar shell */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/sellers" element={<AdminSellers />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/commissions" element={<AdminCommissions />} />
+          <Route path="/admin/disputes" element={<AdminDisputes />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+        </Route>
+
         {/* Public marketplace — header/footer shell */}
         <Route element={<Layout />}>
           <Route index element={<Landing />} />
@@ -72,7 +90,6 @@ export default function App() {
           <Route path="/account" element={<Account />} />
           <Route path="/account/*" element={<Account />} />
           <Route path="/favorites" element={<Favorites />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
