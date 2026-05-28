@@ -21,6 +21,12 @@ function phStyle(n) {
   const g = GRADIENTS[n] || GRADIENTS[1];
   return `background:${g};`;
 }
+/* خلفية البطاقة: صورة حقيقية إن وُجدت، وإلا تدرّج لوني */
+function bgStyle(a) {
+  if (a && a.thumbnail)
+    return `background:#1a2230 url('${a.thumbnail}') center/cover no-repeat;`;
+  return phStyle(a ? a.img : 1);
+}
 function catName(id) {
   const c = NABA_CATEGORIES.find((x) => x.id === id);
   return c ? c.name : id;
@@ -31,7 +37,7 @@ function articleHref(a) { return `article.html?id=${a.id}`; }
 function heroMainHTML(a) {
   return `
   <a class="hero-main" href="${articleHref(a)}">
-    <div class="ph" style="${phStyle(a.img)}"></div>
+    <div class="ph" style="${bgStyle(a)}"></div>
     <div class="overlay">
       <span class="badge">${catName(a.category)}</span>
       <h1>${a.title}</h1>
@@ -43,7 +49,7 @@ function heroMainHTML(a) {
 function heroSideHTML(a) {
   return `
   <a class="card-img" href="${articleHref(a)}">
-    <div class="ph" style="${phStyle(a.img)}"></div>
+    <div class="ph" style="${bgStyle(a)}"></div>
     <div class="overlay">
       <span class="badge ghost">${catName(a.category)}</span>
       <h3>${a.title}</h3>
@@ -54,7 +60,7 @@ function cardHTML(a) {
   return `
   <a class="card" href="${articleHref(a)}">
     <div class="thumb">
-      <div class="ph" style="${phStyle(a.img)}"></div>
+      <div class="ph" style="${bgStyle(a)}"></div>
       <span class="badge">${catName(a.category)}</span>
     </div>
     <div class="body">
@@ -67,7 +73,7 @@ function cardHTML(a) {
 function listItemHTML(a) {
   return `
   <a class="list-item" href="${articleHref(a)}">
-    <div class="thumb"><div class="ph" style="${phStyle(a.img)}"></div></div>
+    <div class="thumb"><div class="ph" style="${bgStyle(a)}"></div></div>
     <div>
       <h4>${a.title}</h4>
       <div class="meta">${catName(a.category)} · ${a.date}</div>
@@ -83,13 +89,13 @@ function trendItemHTML(a, i) {
 }
 
 /* ---------- بناء الصفحة الرئيسية ---------- */
-function buildHome() {
-  const main = NABA_ARTICLES.find((a) => a.featured === "main");
-  const sides = NABA_ARTICLES.filter((a) => a.featured === "side").slice(0, 2);
-  const rest = NABA_ARTICLES.filter((a) => !a.featured);
+function renderHome(articles) {
+  const main = articles[0];
+  const sides = articles.slice(1, 3);
+  const rest = articles.slice(3);
 
   const heroEl = document.getElementById("hero");
-  if (heroEl) {
+  if (heroEl && main) {
     heroEl.innerHTML =
       heroMainHTML(main) +
       `<div class="hero-side">${sides.map(heroSideHTML).join("")}</div>`;
@@ -98,34 +104,71 @@ function buildHome() {
   const latestEl = document.getElementById("latest-grid");
   if (latestEl) latestEl.innerHTML = rest.slice(0, 6).map(cardHTML).join("");
 
-  // أقسام موضوعية
-  renderCategoryStrip("strip-economy", "economy");
-  renderCategoryStrip("strip-tech", "tech");
-  renderCategoryStrip("strip-sports", "sports");
-
   // الأكثر قراءة
   const trendEl = document.getElementById("trending");
   if (trendEl) {
-    const top = [...NABA_ARTICLES].sort(() => Math.random() - 0.5).slice(0, 5);
+    const top = [...articles].sort(() => Math.random() - 0.5).slice(0, 5);
     trendEl.innerHTML = top.map((a, i) => trendItemHTML(a, i)).join("");
   }
 
   // قائمة جانبية مختارة
   const pickEl = document.getElementById("editor-picks");
-  if (pickEl) pickEl.innerHTML = rest.slice(2, 6).map(listItemHTML).join("");
+  if (pickEl) pickEl.innerHTML = rest.slice(6, 10).map(listItemHTML).join("");
 }
 
-function renderCategoryStrip(elId, cat) {
+function buildHome() {
+  // 1) عرض فوري للبيانات الثابتة (رسم سريع)
+  const ordered = [
+    NABA_ARTICLES.find((a) => a.featured === "main"),
+    ...NABA_ARTICLES.filter((a) => a.featured === "side"),
+    ...NABA_ARTICLES.filter((a) => !a.featured),
+  ].filter(Boolean);
+  renderHome(ordered);
+  renderCategoryStrip("strip-economy", "economy");
+  renderCategoryStrip("strip-tech", "tech");
+  renderCategoryStrip("strip-sports", "sports");
+
+  // 2) محاولة جلب الأخبار الحقيقية واستبدال المحتوى عند النجاح
+  if (typeof fetchCategory !== "function") return;
+  fetchCategory("home")
+    .then((live) => {
+      if (live && live.length) {
+        renderHome(live);
+        markLive();
+      }
+    })
+    .catch(() => {/* الإبقاء على البيانات الثابتة */});
+  ["economy", "tech", "sports"].forEach((cat) => {
+    fetchCategory(cat)
+      .then((live) => { if (live && live.length) renderCategoryStrip("strip-" + cat, cat, live); })
+      .catch(() => {});
+  });
+}
+
+function renderCategoryStrip(elId, cat, live) {
   const el = document.getElementById(elId);
   if (!el) return;
-  const items = NABA_ARTICLES.filter((a) => a.category === cat).slice(0, 3);
-  // لو ما في عدد كافٍ، نكمل من البقية
-  if (items.length < 3) {
-    NABA_ARTICLES.forEach((a) => {
-      if (items.length < 3 && !items.includes(a)) items.push(a);
-    });
+  let items;
+  if (live && live.length) {
+    items = live.slice(0, 3);
+  } else {
+    items = NABA_ARTICLES.filter((a) => a.category === cat).slice(0, 3);
+    if (items.length < 3) {
+      NABA_ARTICLES.forEach((a) => {
+        if (items.length < 3 && !items.includes(a)) items.push(a);
+      });
+    }
   }
   el.innerHTML = items.map(cardHTML).join("");
+}
+
+/* مؤشر بصري بأن المحتوى مباشر */
+function markLive() {
+  const cta = document.querySelector(".cta-live");
+  if (cta && !cta.dataset.marked) {
+    cta.dataset.marked = "1";
+    cta.title = "الأخبار محدّثة مباشرة من المصدر";
+  }
 }
 
 /* ---------- بناء صفحة القسم ---------- */
@@ -136,6 +179,7 @@ function buildCategory() {
   const gridEl = document.getElementById("cat-grid");
   if (titleEl) titleEl.textContent = catName(cat);
   document.title = `${catName(cat)} — نَبأ NABA`;
+  // البيانات الثابتة أولاً
   let items = NABA_ARTICLES.filter((a) => a.category === cat);
   if (items.length === 0) items = NABA_ARTICLES;
   if (gridEl) gridEl.innerHTML = items.map(cardHTML).join("");
@@ -143,13 +187,22 @@ function buildCategory() {
   document.querySelectorAll(".nav a").forEach((a) => {
     if (a.dataset.cat === cat) a.classList.add("active");
   });
+  // ثم الأخبار الحقيقية
+  if (typeof fetchCategory === "function") {
+    fetchCategory(cat)
+      .then((live) => { if (gridEl && live && live.length) gridEl.innerHTML = live.map(cardHTML).join(""); })
+      .catch(() => {});
+  }
 }
 
 /* ---------- بناء صفحة المقال ---------- */
 function buildArticle() {
   const params = new URLSearchParams(location.search);
   const id = params.get("id") || "a1";
-  const a = NABA_ARTICLES.find((x) => x.id === id) || NABA_ARTICLES[0];
+  // مقال مباشر من التخزين المؤقت، وإلا مقال ثابت
+  let a = null;
+  if (typeof getCachedArticle === "function") a = getCachedArticle(id);
+  if (!a) a = NABA_ARTICLES.find((x) => x.id === id) || NABA_ARTICLES[0];
   document.title = `${a.title} — نَبأ NABA`;
 
   const set = (sel, val) => { const e = document.querySelector(sel); if (e) e.textContent = val; };
@@ -164,27 +217,41 @@ function buildArticle() {
   if (badge) badge.textContent = catName(a.category);
 
   const fig = document.querySelector("#art-figure .ph");
-  if (fig) fig.setAttribute("style", phStyle(a.img));
+  if (fig) fig.setAttribute("style", bgStyle(a));
 
   const bodyEl = document.getElementById("art-body");
   if (bodyEl) {
-    let html = "";
-    NABA_BODY.forEach((p, i) => {
-      html += `<p>${p}</p>`;
-      if (i === 1) html += `<blockquote>«إننا أمام لحظة فارقة تتطلب حكمة في القرار وشجاعة في المبادرة» — مصدر مسؤول</blockquote>`;
-      if (i === 2) html += `<h2>قراءة في الأبعاد والتداعيات</h2>`;
-    });
-    bodyEl.innerHTML = html;
+    if (a.live && a.content) {
+      // محتوى حقيقي من المصدر + رابط للأصل
+      bodyEl.innerHTML =
+        `<p>${a.content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</p>` +
+        (a.link
+          ? `<p style="margin-top:24px"><a class="cta-live" style="display:inline-flex" href="${a.link}" target="_blank" rel="noopener">اقرأ الخبر كاملاً من المصدر ←</a></p>`
+          : "");
+    } else {
+      let html = "";
+      NABA_BODY.forEach((p, i) => {
+        html += `<p>${p}</p>`;
+        if (i === 1) html += `<blockquote>«إننا أمام لحظة فارقة تتطلب حكمة في القرار وشجاعة في المبادرة» — مصدر مسؤول</blockquote>`;
+        if (i === 2) html += `<h2>قراءة في الأبعاد والتداعيات</h2>`;
+      });
+      bodyEl.innerHTML = html;
+    }
   }
 
   const tagsEl = document.getElementById("art-tags");
-  if (tagsEl) tagsEl.innerHTML = a.tags.map((t) => `<a href="#">#${t}</a>`).join("");
+  if (tagsEl) {
+    const tags = a.tags && a.tags.length ? a.tags : [catName(a.category), "نَبأ", "أخبار"];
+    tagsEl.innerHTML = tags.map((t) => `<a href="#">#${t}</a>`).join("");
+  }
 
-  // مقالات ذات صلة
+  // مقالات ذات صلة (من المباشر المخزّن إن وُجد، وإلا الثابت)
   const relEl = document.getElementById("art-related");
   if (relEl) {
-    const rel = NABA_ARTICLES.filter((x) => x.id !== a.id && x.category === a.category);
-    const fill = NABA_ARTICLES.filter((x) => x.id !== a.id && x.category !== a.category);
+    const pool = (typeof getAllCached === "function" && getAllCached().length)
+      ? getAllCached() : NABA_ARTICLES;
+    const rel = pool.filter((x) => x.id !== a.id && x.category === a.category);
+    const fill = pool.filter((x) => x.id !== a.id && x.category !== a.category);
     const list = [...rel, ...fill].slice(0, 3);
     relEl.innerHTML = list.map(cardHTML).join("");
   }
@@ -249,9 +316,43 @@ function setupSearch() {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const q = input.value.trim();
-      if (q) alert(`بحث تجريبي عن: «${q}»\n(يمكن ربطه بمحرك بحث حقيقي لاحقاً)`);
+      if (q) location.href = `search.html?q=${encodeURIComponent(q)}`;
     }
   });
+}
+
+/* ---------- بناء صفحة البحث ---------- */
+function buildSearch() {
+  const params = new URLSearchParams(location.search);
+  const q = (params.get("q") || "").trim();
+  const titleEl = document.getElementById("search-title");
+  const gridEl = document.getElementById("search-grid");
+  const box = document.getElementById("search-input");
+  if (box) box.value = q;
+  if (titleEl) titleEl.textContent = q ? `نتائج البحث عن: «${q}»` : "ابحث في نَبأ";
+  document.title = `بحث: ${q} — نَبأ NABA`;
+
+  const render = (pool) => {
+    if (!gridEl) return;
+    if (!q) { gridEl.innerHTML = `<p style="color:var(--muted)">اكتب كلمة في صندوق البحث بالأعلى ثم اضغط Enter.</p>`; return; }
+    const norm = (s) => (s || "").toLowerCase();
+    const hits = pool.filter((a) =>
+      norm(a.title).includes(norm(q)) || norm(a.lead).includes(norm(q)) ||
+      (a.tags && a.tags.some((t) => norm(t).includes(norm(q)))));
+    gridEl.innerHTML = hits.length
+      ? hits.map(cardHTML).join("")
+      : `<p style="color:var(--muted)">لا توجد نتائج مطابقة لـ «${q}». جرّب كلمة أخرى.</p>`;
+  };
+
+  // ابحث في الثابت فوراً، ثم اجلب أخباراً حقيقية ووسّع النتائج
+  render(NABA_ARTICLES);
+  if (typeof fetchCategory === "function" && q) {
+    Promise.allSettled(["home", "world", "economy", "tech", "sports"].map((c) => fetchCategory(c)))
+      .then((results) => {
+        const live = results.filter((r) => r.status === "fulfilled").flatMap((r) => r.value);
+        if (live.length) render([...live, ...NABA_ARTICLES]);
+      });
+  }
 }
 
 function setupScrollTop() {
@@ -277,4 +378,38 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "home") buildHome();
   if (page === "category") buildCategory();
   if (page === "article") buildArticle();
+  if (page === "search") buildSearch();
+  if (page === "opinion") buildOpinion();
 });
+
+/* ---------- صفحة الرأي (كتّاب نَبأ) ---------- */
+const NABA_WRITERS = [
+  { name: "أحمد العامري", role: "محلل سياسي", img: 7,
+    title: "حين تتحوّل الأزمات إلى فرص: قراءة في موازين القوى الجديدة",
+    lead: "العالم يعيد ترتيب أوراقه، والرابح من يقرأ المتغيّرات مبكراً قبل أن تفرض نفسها." },
+  { name: "ليلى منصور", role: "كاتبة اقتصادية", img: 4,
+    title: "اقتصاد ما بعد التضخم: لماذا تبدو المؤشرات مطمئنة وخادعة معاً؟",
+    lead: "الأرقام وحدها لا تكفي لفهم ما يجري في جيوب الناس وأسواقهم." },
+  { name: "كريم فاضل", role: "كاتب في العلوم", img: 9,
+    title: "الذكاء الاصطناعي ليس عدوّاً ولا مُخلّصاً.. إنه مرآتنا",
+    lead: "كل ما نخشاه ونأمله في هذه التقنية هو في حقيقته انعكاس لاختياراتنا نحن." },
+  { name: "سارة حداد", role: "ناقدة ثقافية", img: 8,
+    title: "السينما العربية وسؤال الهوية في زمن المنصّات العابرة للحدود",
+    lead: "بين الانفتاح على العالم والحفاظ على الخصوصية، تبحث صناعتنا عن صوتها." },
+];
+function buildOpinion() {
+  const el = document.getElementById("opinion-grid");
+  if (!el) return;
+  el.innerHTML = NABA_WRITERS.map((w) => `
+    <article class="card">
+      <div class="body">
+        <div class="author" style="margin-bottom:6px">
+          <span class="avatar" style="background:${(GRADIENTS[w.img])}">${w.name.charAt(0)}</span>
+          <div><b>${w.name}</b><div style="font-size:12px;color:var(--muted)">${w.role}</div></div>
+        </div>
+        <h3 style="font-size:19px">${w.title}</h3>
+        <p>${w.lead}</p>
+        <div class="meta"><span class="cat">رأي</span><span>مقال رأي</span></div>
+      </div>
+    </article>`).join("");
+}

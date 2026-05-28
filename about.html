@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>قسم — نَبأ NABA</title>
-  <meta name="description" content="تصفّح أحدث الأخبار حسب القسم على منصة نَبأ NABA." />
+  <title>من نحن — نَبأ NABA</title>
+  <meta name="description" content="تعرّف على منصة نَبأ NABA الإخبارية وتواصل معنا." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body data-page="category">
+<body data-page="about">
 
   <div class="topbar">
     <div class="container">
@@ -40,29 +40,36 @@
         <input type="text" id="search-input" placeholder="ابحث في الأخبار..." />
         <span class="s-icon">🔍</span>
       </div>
-      <a class="cta-live" href="#"><span class="dot-live"></span> بث مباشر</a>
+      <a class="cta-live" href="opinion.html">✍️ مقالات الرأي</a>
     </div>
   </header>
 
   <nav class="nav">
     <div class="container" data-nav></div>
   </nav>
-
-  <div class="breaking">
-    <div class="container">
-      <span class="label">🔴 عاجل</span>
-      <div class="ticker"><ul id="breaking-list"></ul></div>
-    </div>
-  </div>
-
   <main class="container section-page">
-    <div class="section-head">
-      <h2 id="cat-title">القسم</h2>
-      <a href="index.html">→ العودة للرئيسية</a>
+    <div class="article-wrap">
+      <div class="section-head"><h2>من نحن</h2></div>
+      <p class="article-lead">نَبأ NABA منصّة إخبارية رقمية مستقلة، رسالتها إيصال الخبر اليقين إلى القارئ العربي بسرعة ومصداقية وعمق.</p>
+      <div class="article-body">
+        <p>انطلقت «نَبأ» لتكون نافذة القارئ العربي على العالم، نغطّي الحدث لحظة وقوعه، ونقدّم خلفه التحليل الذي يضع الخبر في سياقه. نؤمن أن الصحافة الجيدة مسؤولية قبل أن تكون مهنة، وأن ثقة القارئ هي رأس مالنا الأهم.</p>
+        <h2>قيمنا</h2>
+        <blockquote>المصداقية أولاً، والسرعة لا تكون على حساب الدقّة أبداً.</blockquote>
+        <p><b>الاستقلالية:</b> لا تتحكّم في تحريرنا أي أجندة. <br><b>الدقّة:</b> نتحقّق قبل أن ننشر. <br><b>الشمول:</b> نغطّي السياسة والاقتصاد والرياضة والتكنولوجيا والثقافة والعلوم والصحة. <br><b>القارئ أولاً:</b> نكتب بلغة واضحة تحترم وقت القارئ وذكاءه.</p>
+        <h2 id="contact">اتصل بنا</h2>
+        <p>يسعدنا تواصلك معنا للملاحظات أو الأخبار أو فرص التعاون:</p>
+        <form id="newsletter-form" style="max-width:520px;background:var(--bg-2);border:1px solid var(--line);padding:20px;border-radius:12px">
+          <div style="display:grid;gap:10px">
+            <input style="height:44px;border:1px solid var(--line);border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink)" type="text" placeholder="الاسم" required />
+            <input style="height:44px;border:1px solid var(--line);border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink)" type="email" placeholder="البريد الإلكتروني" required />
+            <textarea style="border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--bg);color:var(--ink);font-family:inherit;min-height:110px" placeholder="رسالتك..." required></textarea>
+            <button class="cta-live" style="border:0;cursor:pointer;justify-content:center" type="submit">إرسال الرسالة</button>
+            <span class="ok" style="display:none;color:var(--live);font-weight:700">✅ تم استلام رسالتك، شكراً لتواصلك!</span>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="grid" id="cat-grid"></div>
   </main>
-
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
@@ -89,7 +96,7 @@
           <h4>المزيد</h4>
           <ul>
             <li><a href="category.html?cat=tech">تكنولوجيا</a></li>
-            <li><a href="category.html?cat=culture">ثقافة وفن</a></li>
+            <li><a href="opinion.html">رأي</a></li>
             <li><a href="category.html?cat=health">صحة</a></li>
             <li><a href="category.html?cat=science">علوم</a></li>
           </ul>
@@ -98,9 +105,9 @@
           <h4>عن نَبأ</h4>
           <ul>
             <li><a href="about.html">من نحن</a></li>
+            <li><a href="about.html#contact">اتصل بنا</a></li>
             <li><a href="#">سياسة الخصوصية</a></li>
             <li><a href="#">شروط الاستخدام</a></li>
-            <li><a href="about.html#contact">اتصل بنا</a></li>
           </ul>
         </div>
       </div>

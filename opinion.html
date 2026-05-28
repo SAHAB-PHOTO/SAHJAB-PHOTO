@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>قسم — نَبأ NABA</title>
-  <meta name="description" content="تصفّح أحدث الأخبار حسب القسم على منصة نَبأ NABA." />
+  <title>رأي — نَبأ NABA</title>
+  <meta name="description" content="مقالات رأي وتحليلات كتّاب نَبأ NABA." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body data-page="category">
+<body data-page="opinion">
 
   <div class="topbar">
     <div class="container">
@@ -40,29 +40,18 @@
         <input type="text" id="search-input" placeholder="ابحث في الأخبار..." />
         <span class="s-icon">🔍</span>
       </div>
-      <a class="cta-live" href="#"><span class="dot-live"></span> بث مباشر</a>
+      <a class="cta-live" href="opinion.html">✍️ مقالات الرأي</a>
     </div>
   </header>
 
   <nav class="nav">
     <div class="container" data-nav></div>
   </nav>
-
-  <div class="breaking">
-    <div class="container">
-      <span class="label">🔴 عاجل</span>
-      <div class="ticker"><ul id="breaking-list"></ul></div>
-    </div>
-  </div>
-
   <main class="container section-page">
-    <div class="section-head">
-      <h2 id="cat-title">القسم</h2>
-      <a href="index.html">→ العودة للرئيسية</a>
-    </div>
-    <div class="grid" id="cat-grid"></div>
+    <div class="section-head"><h2>آراء وتحليلات</h2><a href="index.html">→ الرئيسية</a></div>
+    <p style="color:var(--muted);margin-bottom:18px">وجهات نظر كتّاب نَبأ حول أبرز قضايا الساعة — الآراء تعبّر عن أصحابها.</p>
+    <div class="grid" id="opinion-grid"></div>
   </main>
-
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
@@ -89,7 +78,7 @@
           <h4>المزيد</h4>
           <ul>
             <li><a href="category.html?cat=tech">تكنولوجيا</a></li>
-            <li><a href="category.html?cat=culture">ثقافة وفن</a></li>
+            <li><a href="opinion.html">رأي</a></li>
             <li><a href="category.html?cat=health">صحة</a></li>
             <li><a href="category.html?cat=science">علوم</a></li>
           </ul>
@@ -98,9 +87,9 @@
           <h4>عن نَبأ</h4>
           <ul>
             <li><a href="about.html">من نحن</a></li>
+            <li><a href="about.html#contact">اتصل بنا</a></li>
             <li><a href="#">سياسة الخصوصية</a></li>
             <li><a href="#">شروط الاستخدام</a></li>
-            <li><a href="about.html#contact">اتصل بنا</a></li>
           </ul>
         </div>
       </div>
