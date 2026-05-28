@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>قسم — نَبأ NABA</title>
+  <meta name="description" content="تصفّح أحدث الأخبار حسب القسم على منصة نَبأ NABA." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="category">
+
+  <div class="topbar">
+    <div class="container">
+      <div class="date">🗓️ <span id="today-date"></span></div>
+      <div class="top-links">
+        <a href="#">من نحن</a>
+        <a href="#">اتصل بنا</a>
+        <a href="#">البث المباشر</a>
+        <a href="#">النشرة البريدية</a>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="theme-toggle">🌙 ليلي</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="masthead">
+    <div class="container">
+      <a class="logo" href="index.html">
+        <span class="mark">ن</span>
+        <span>
+          <span class="name">نَبأ <span style="color:var(--brand)">NABA</span></span>
+          <span class="tag">الخبرُ اليقين، أولاً</span>
+        </span>
+      </a>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="ابحث في الأخبار..." />
+        <span class="s-icon">🔍</span>
+      </div>
+      <a class="cta-live" href="#"><span class="dot-live"></span> بث مباشر</a>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <div class="container" data-nav></div>
+  </nav>
+
+  <div class="breaking">
+    <div class="container">
+      <span class="label">🔴 عاجل</span>
+      <div class="ticker"><ul id="breaking-list"></ul></div>
+    </div>
+  </div>
+
+  <main class="container section-page">
+    <div class="section-head">
+      <h2 id="cat-title">القسم</h2>
+      <a href="index.html">→ العودة للرئيسية</a>
+    </div>
+    <div class="grid" id="cat-grid"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="f-about">
+          <a class="logo" href="index.html" style="color:#fff">
+            <span class="mark">ن</span>
+            <span class="name" style="font-size:24px">نَبأ NABA</span>
+          </a>
+          <p>منصّة إخبارية مستقلة تنقل لك الحدث بمصداقية وعمق على مدار الساعة.</p>
+          <div class="socials">
+            <a href="#">f</a><a href="#">𝕏</a><a href="#">◎</a><a href="#">▶</a>
+          </div>
+        </div>
+        <div>
+          <h4>الأقسام</h4>
+          <ul>
+            <li><a href="category.html?cat=world">العالم</a></li>
+            <li><a href="category.html?cat=politics">سياسة</a></li>
+            <li><a href="category.html?cat=economy">اقتصاد</a></li>
+            <li><a href="category.html?cat=sports">رياضة</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>المزيد</h4>
+          <ul>
+            <li><a href="category.html?cat=tech">تكنولوجيا</a></li>
+            <li><a href="category.html?cat=culture">ثقافة وفن</a></li>
+            <li><a href="category.html?cat=health">صحة</a></li>
+            <li><a href="category.html?cat=science">علوم</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>عن نَبأ</h4>
+          <ul>
+            <li><a href="#">من نحن</a></li>
+            <li><a href="#">سياسة الخصوصية</a></li>
+            <li><a href="#">شروط الاستخدام</a></li>
+            <li><a href="#">اتصل بنا</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 نَبأ NABA — جميع الحقوق محفوظة.</span>
+        <span>صُمّم بعناية لخدمة القارئ العربي.</span>
+      </div>
+    </div>
+  </footer>
+
+  <button class="scroll-top" id="scroll-top" title="إلى الأعلى">↑</button>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

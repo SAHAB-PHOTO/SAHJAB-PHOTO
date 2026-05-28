@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>نَبأ NABA — الخبرُ اليقين، أولاً</title>
+  <meta name="description" content="نَبأ NABA — موقع إخباري شامل يقدّم آخر الأخبار العاجلة والتحليلات في السياسة والاقتصاد والرياضة والتكنولوجيا والثقافة والعلوم على مدار الساعة." />
+  <meta name="keywords" content="أخبار, أخبار عاجلة, سياسة, اقتصاد, رياضة, تكنولوجيا, نبأ, NABA" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="home">
+
+  <!-- الشريط العلوي -->
+  <div class="topbar">
+    <div class="container">
+      <div class="date">🗓️ <span id="today-date"></span></div>
+      <div class="top-links">
+        <a href="#">من نحن</a>
+        <a href="#">اتصل بنا</a>
+        <a href="#">البث المباشر</a>
+        <a href="#">النشرة البريدية</a>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="theme-toggle">🌙 ليلي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- رأس الموقع -->
+  <header class="masthead">
+    <div class="container">
+      <a class="logo" href="index.html">
+        <span class="mark">ن</span>
+        <span>
+          <span class="name">نَبأ <span style="color:var(--brand)">NABA</span></span>
+          <span class="tag">الخبرُ اليقين، أولاً</span>
+        </span>
+      </a>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="ابحث في الأخبار..." />
+        <span class="s-icon">🔍</span>
+      </div>
+      <a class="cta-live" href="#"><span class="dot-live"></span> بث مباشر</a>
+    </div>
+  </header>
+
+  <!-- شريط التنقل -->
+  <nav class="nav">
+    <div class="container" data-nav></div>
+  </nav>
+
+  <!-- شريط العاجل -->
+  <div class="breaking">
+    <div class="container">
+      <span class="label">🔴 عاجل</span>
+      <div class="ticker"><ul id="breaking-list"></ul></div>
+    </div>
+  </div>
+
+  <!-- المحتوى -->
+  <main class="container">
+    <div class="layout">
+      <!-- العمود الرئيسي -->
+      <div>
+        <section class="hero" id="hero"></section>
+
+        <div class="section-head">
+          <h2>أحدث الأخبار</h2>
+          <a href="category.html?cat=world">عرض الكل ←</a>
+        </div>
+        <div class="grid" id="latest-grid"></div>
+
+        <div class="section-head">
+          <h2>اقتصاد وأعمال</h2>
+          <a href="category.html?cat=economy">عرض الكل ←</a>
+        </div>
+        <div class="grid" id="strip-economy"></div>
+
+        <div class="section-head">
+          <h2>تكنولوجيا</h2>
+          <a href="category.html?cat=tech">عرض الكل ←</a>
+        </div>
+        <div class="grid" id="strip-tech"></div>
+
+        <div class="section-head">
+          <h2>رياضة</h2>
+          <a href="category.html?cat=sports">عرض الكل ←</a>
+        </div>
+        <div class="grid" id="strip-sports"></div>
+      </div>
+
+      <!-- الشريط الجانبي -->
+      <aside class="sidebar">
+        <div class="widget">
+          <h3><span class="bar"></span> الأكثر قراءة</h3>
+          <div id="trending"></div>
+        </div>
+
+        <div class="widget newsletter">
+          <h3 style="color:#fff">📩 النشرة البريدية</h3>
+          <p>اشترك ليصلك موجز الأخبار الأهم كل صباح إلى بريدك.</p>
+          <form id="newsletter-form">
+            <input type="email" placeholder="بريدك الإلكتروني" required />
+            <button type="submit">اشترك الآن</button>
+            <span class="ok">✅ تم اشتراكك بنجاح، شكراً لك!</span>
+          </form>
+        </div>
+
+        <div class="widget">
+          <h3><span class="bar"></span> مختارات المحرّر</h3>
+          <div id="editor-picks"></div>
+        </div>
+
+        <div class="widget">
+          <h3><span class="bar"></span> مؤشرات الأسواق</h3>
+          <div class="market-row"><span>الذهب (الأونصة)</span><span class="up">▲ 2,340$</span></div>
+          <div class="market-row"><span>النفط (برميل)</span><span class="up">▲ 84.20$</span></div>
+          <div class="market-row"><span>اليورو/دولار</span><span class="down">▼ 1.084</span></div>
+          <div class="market-row"><span>بيتكوين</span><span class="up">▲ 68,500$</span></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- التذييل -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="f-about">
+          <a class="logo" href="index.html" style="color:#fff">
+            <span class="mark">ن</span>
+            <span class="name" style="font-size:24px">نَبأ NABA</span>
+          </a>
+          <p>منصّة إخبارية مستقلة تنقل لك الحدث بمصداقية وعمق، وتضع بين يديك تحليلات تساعدك على فهم العالم من حولك على مدار الساعة.</p>
+          <div class="socials">
+            <a href="#" title="فيسبوك">f</a>
+            <a href="#" title="إكس">𝕏</a>
+            <a href="#" title="إنستغرام">◎</a>
+            <a href="#" title="يوتيوب">▶</a>
+          </div>
+        </div>
+        <div>
+          <h4>الأقسام</h4>
+          <ul>
+            <li><a href="category.html?cat=world">العالم</a></li>
+            <li><a href="category.html?cat=politics">سياسة</a></li>
+            <li><a href="category.html?cat=economy">اقتصاد</a></li>
+            <li><a href="category.html?cat=sports">رياضة</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>المزيد</h4>
+          <ul>
+            <li><a href="category.html?cat=tech">تكنولوجيا</a></li>
+            <li><a href="category.html?cat=culture">ثقافة وفن</a></li>
+            <li><a href="category.html?cat=health">صحة</a></li>
+            <li><a href="category.html?cat=science">علوم</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>عن نَبأ</h4>
+          <ul>
+            <li><a href="#">من نحن</a></li>
+            <li><a href="#">سياسة الخصوصية</a></li>
+            <li><a href="#">شروط الاستخدام</a></li>
+            <li><a href="#">اتصل بنا</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 نَبأ NABA — جميع الحقوق محفوظة.</span>
+        <span>صُمّم بعناية لخدمة القارئ العربي.</span>
+      </div>
+    </div>
+  </footer>
+
+  <button class="scroll-top" id="scroll-top" title="إلى الأعلى">↑</button>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
