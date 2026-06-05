@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 222 22% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 22% 16%;
+
+    /* Brand: vibrant Algerian red-orange */
+    --primary: 11 96% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Algeria-green accent */
+    --secondary: 150 62% 34%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 38 96% 52%;
+    --accent-foreground: 222 30% 14%;
+
+    --success: 150 62% 34%;
+    --success-foreground: 0 0% 100%;
+
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --destructive: 0 84% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 16% 90%;
+    --input: 220 16% 88%;
+    --ring: 11 96% 45%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 24% 9%;
+    --foreground: 210 20% 96%;
+    --card: 222 22% 12%;
+    --card-foreground: 210 20% 96%;
+    --primary: 11 96% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 150 50% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 38 96% 55%;
+    --accent-foreground: 222 30% 14%;
+    --success: 150 50% 42%;
+    --success-foreground: 0 0% 100%;
+    --muted: 222 16% 18%;
+    --muted-foreground: 220 12% 65%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 16% 22%;
+    --input: 222 16% 24%;
+    --ring: 11 96% 52%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+}
+
+@layer components {
+  .container-app {
+    @apply container mx-auto px-4;
+  }
+
+  .gradient-brand {
+    background-image: linear-gradient(
+      120deg,
+      hsl(11 96% 45%) 0%,
+      hsl(22 95% 52%) 45%,
+      hsl(38 96% 52%) 100%
+    );
+  }
+
+  .text-gradient-brand {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      120deg,
+      hsl(11 96% 45%),
+      hsl(38 96% 52%)
+    );
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
