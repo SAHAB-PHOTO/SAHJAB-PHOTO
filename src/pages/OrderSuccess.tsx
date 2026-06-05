@@ -51,7 +51,7 @@ export default function OrderSuccess() {
         </div>
 
         <div className="mt-7 flex gap-3">
-          <Link to="/account" className="flex-1">
+          <Link to={`/track?code=${orderId}`} className="flex-1">
             <Button variant="outline" size="full">تتبّع الطلب</Button>
           </Link>
           <Link to="/" className="flex-1">

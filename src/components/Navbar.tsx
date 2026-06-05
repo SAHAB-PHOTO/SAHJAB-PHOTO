@@ -42,7 +42,7 @@ export function Navbar() {
             <span className="inline-flex items-center gap-1">
               <Globe size={13} /> العربية · دج
             </span>
-            <Link to="/account" className="hover:text-accent">
+            <Link to="/track" className="hover:text-accent">
               تتبع طلبك
             </Link>
           </div>

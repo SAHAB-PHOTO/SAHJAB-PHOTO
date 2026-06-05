@@ -11,6 +11,7 @@ import CartPage from "@/pages/Cart";
 import CheckoutPage from "@/pages/Checkout";
 import OrderSuccess from "@/pages/OrderSuccess";
 import Account from "@/pages/Account";
+import Track from "@/pages/Track";
 import Seller from "@/pages/Seller";
 import Wishlist from "@/pages/Wishlist";
 import NotFound from "@/pages/NotFound";
@@ -31,6 +32,7 @@ export default function App() {
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/order-success" element={<OrderSuccess />} />
                 <Route path="/account" element={<Account />} />
+                <Route path="/track" element={<Track />} />
                 <Route path="/seller" element={<Seller />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="*" element={<NotFound />} />
