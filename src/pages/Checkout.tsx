@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Lock, CheckCircle2, Truck, Building2, CreditCard, Wallet, Banknote, Star } from "lucide-react";
+import { Lock, CheckCircle2, Truck, Building2, CreditCard, Wallet, Banknote, Star, Bell, MessageCircle, Mail } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { paymentMethods, type PaymentMethod } from "@/data/payments";
 import { couriers, getCourier } from "@/data/couriers";
+import { computeShipping, getZone, zoneNames } from "@/data/shipping";
 import { wilayas } from "@/data/wilayas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +24,12 @@ export default function CheckoutPage() {
   const [courierId, setCourierId] = useState<string>("yalidine");
   const [pay, setPay] = useState<string>("cod");
   const [processing, setProcessing] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", wilaya: "", address: "" });
+  const [form, setForm] = useState({ name: "", phone: "", wilaya: "", address: "", email: "" });
+  const [notify, setNotify] = useState({ sms: true, whatsapp: true, email: false });
 
   const courier = getCourier(courierId)!;
-  const baseFee = delivery === "home" ? courier.homeFee : courier.deskFee;
-  // التوصيل المجاني للمنزل عند تجاوز 5000 دج
-  const shipping = delivery === "home" && subtotal >= 5000 ? 0 : baseFee;
+  // حساب التوصيل تلقائياً حسب الشركة + الولاية + نوع التوصيل + قيمة الطلب
+  const shipping = computeShipping(courier, form.wilaya, delivery, subtotal);
   const total = subtotal + shipping;
   const codBlocked = pay === "cod" && !courier.cod;
 
@@ -60,6 +61,11 @@ export default function CheckoutPage() {
     setTimeout(() => {
       const orderId = "DZ" + Math.floor(100000 + Math.random() * 900000);
       clear();
+      const channels = [
+        notify.sms && "SMS",
+        notify.whatsapp && "واتساب",
+        notify.email && "البريد",
+      ].filter(Boolean) as string[];
       navigate("/order-success", {
         state: {
           orderId,
@@ -68,6 +74,7 @@ export default function CheckoutPage() {
           method: paymentMethods.find((p) => p.id === pay)?.name,
           courier: courier.name,
           eta: courier.eta,
+          channels,
         },
       });
     }, 1400);
@@ -91,7 +98,12 @@ export default function CheckoutPage() {
               <Field label="الاسم الكامل" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="مثال: أحمد بن علي" />
               <Field label="رقم الهاتف" value={form.phone} onChange={(v) => setForm({ ...form, phone: v.replace(/\D/g, "") })} placeholder="0X XX XX XX XX" />
               <div>
-                <label className="mb-1 block text-sm font-bold">الولاية</label>
+                <label className="mb-1 flex items-center gap-2 text-sm font-bold">
+                  الولاية
+                  {form.wilaya && (
+                    <Badge tone="muted">منطقة: {zoneNames[getZone(form.wilaya)]}</Badge>
+                  )}
+                </label>
                 <select
                   value={form.wilaya}
                   onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
@@ -113,7 +125,10 @@ export default function CheckoutPage() {
                 Icon={Truck}
                 title="التوصيل إلى المنزل"
                 desc={courier.eta}
-                price={subtotal >= 5000 ? "مجاني" : formatDZD(courier.homeFee)}
+                price={(() => {
+                  const f = computeShipping(courier, form.wilaya, "home", subtotal);
+                  return f === 0 ? "مجاني" : formatDZD(f);
+                })()}
               />
               <DeliveryOption
                 active={delivery === "desk"}
@@ -121,7 +136,7 @@ export default function CheckoutPage() {
                 Icon={Building2}
                 title="التوصيل إلى المكتب (Stop Desk)"
                 desc={courier.eta}
-                price={formatDZD(courier.deskFee)}
+                price={formatDZD(computeShipping(courier, form.wilaya, "desk", subtotal))}
               />
             </div>
           </section>
@@ -134,10 +149,13 @@ export default function CheckoutPage() {
             </h2>
             <p className="mb-4 text-xs text-muted-foreground">
               اختر شركة التوصيل المناسبة لك — كلها شركات جزائرية معتمدة 🇩🇿
+              {form.wilaya
+                ? ` · الأسعار محسوبة لولاية ${form.wilaya} (${zoneNames[getZone(form.wilaya)]})`
+                : " · 💡 اختر ولايتك أعلاه ليُحسب سعر التوصيل تلقائياً"}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {couriers.map((c) => {
-                const fee = delivery === "home" && subtotal >= 5000 ? 0 : delivery === "home" ? c.homeFee : c.deskFee;
+                const fee = computeShipping(c, form.wilaya, delivery, subtotal);
                 return (
                   <button
                     key={c.id}
@@ -242,6 +260,53 @@ export default function CheckoutPage() {
               </p>
             )}
           </section>
+
+          {/* 4. notifications */}
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="mb-1 flex items-center gap-2 text-lg font-black">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-white">4</span>
+              إشعارات حالة الطلب
+            </h2>
+            <p className="mb-4 text-xs text-muted-foreground">
+              اختر كيف تحب أن نُعلِمك بكل تحديث لطردك (تأكيد، خروج للتوصيل، التسليم).
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <NotifyToggle
+                Icon={MessageCircle}
+                title="رسائل SMS"
+                desc={form.phone ? `إلى ${form.phone}` : "إلى رقم هاتفك"}
+                on={notify.sms}
+                onClick={() => setNotify((n) => ({ ...n, sms: !n.sms }))}
+              />
+              <NotifyToggle
+                Icon={Bell}
+                title="واتساب"
+                desc="تحديثات فورية"
+                on={notify.whatsapp}
+                onClick={() => setNotify((n) => ({ ...n, whatsapp: !n.whatsapp }))}
+              />
+              <NotifyToggle
+                Icon={Mail}
+                title="البريد الإلكتروني"
+                desc="إيصال + تتبّع"
+                on={notify.email}
+                onClick={() => setNotify((n) => ({ ...n, email: !n.email }))}
+              />
+            </div>
+            {notify.email && (
+              <div className="mt-3">
+                <Field
+                  label="البريد الإلكتروني"
+                  value={form.email}
+                  onChange={(v) => setForm({ ...form, email: v })}
+                  placeholder="example@email.com"
+                />
+              </div>
+            )}
+            <p className="mt-3 text-[11px] text-muted-foreground">
+              📨 الواجهة جاهزة لربط مزوّد إرسال حقيقي (SMS / WhatsApp Business / Email) عبر مفاتيح .env.
+            </p>
+          </section>
         </div>
 
         {/* summary */}
@@ -307,6 +372,45 @@ function Field({
         className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary"
       />
     </div>
+  );
+}
+
+function NotifyToggle({
+  Icon,
+  title,
+  desc,
+  on,
+  onClick,
+}: {
+  Icon: typeof Bell;
+  title: string;
+  desc: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-xl border-2 p-3 text-right transition ${
+        on ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+      }`}
+    >
+      <Icon size={18} className={on ? "text-primary" : "text-muted-foreground"} />
+      <span className="flex-1">
+        <span className="block text-sm font-bold">{title}</span>
+        <span className="block text-xs text-muted-foreground">{desc}</span>
+      </span>
+      <span
+        className={`relative h-5 w-9 shrink-0 rounded-full transition ${on ? "bg-primary" : "bg-muted"}`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+            on ? "left-0.5" : "right-0.5"
+          }`}
+        />
+      </span>
+    </button>
   );
 }
 

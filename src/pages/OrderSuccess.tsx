@@ -5,7 +5,14 @@ import { formatDZD } from "@/lib/utils";
 
 export default function OrderSuccess() {
   const { state } = useLocation() as {
-    state?: { orderId?: string; total?: number; method?: string; courier?: string; eta?: string };
+    state?: {
+      orderId?: string;
+      total?: number;
+      method?: string;
+      courier?: string;
+      eta?: string;
+      channels?: string[];
+    };
   };
   const orderId = state?.orderId ?? "DZ000000";
 
@@ -18,7 +25,10 @@ export default function OrderSuccess() {
         </div>
         <h1 className="mt-5 text-2xl font-black">تم تأكيد طلبك بنجاح! 🎉</h1>
         <p className="mt-2 text-muted-foreground">
-          شكراً لتسوّقك من RafikExpress. سنرسل لك تأكيداً عبر الرسائل القصيرة.
+          شكراً لتسوّقك من RafikExpress.
+          {state?.channels && state.channels.length > 0
+            ? ` ستصلك تحديثات الطلب عبر: ${state.channels.join(" · ")}.`
+            : " سنرسل لك تأكيداً عبر الرسائل القصيرة."}
         </p>
 
         <div className="mt-5 space-y-2 rounded-xl bg-muted/50 p-4 text-right text-sm">

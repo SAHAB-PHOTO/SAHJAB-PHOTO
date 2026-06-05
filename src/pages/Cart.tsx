@@ -114,8 +114,11 @@ export default function CartPage() {
           <dl className="space-y-2 border-t border-border pt-3 text-sm">
             <Row label="المجموع الفرعي" value={formatDZD(subtotal)} />
             {discount > 0 && <Row label="الخصم" value={`- ${formatDZD(discount)}`} accent />}
-            <Row label="التوصيل" value={shipping === 0 ? "مجاني" : formatDZD(shipping)} />
+            <Row label="التوصيل (تقديري)" value={shipping === 0 ? "مجاني" : formatDZD(shipping)} />
           </dl>
+          <p className="text-[11px] text-muted-foreground">
+            🚚 يُحسب سعر التوصيل النهائي حسب الولاية وشركة التوصيل في صفحة الدفع.
+          </p>
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="font-bold">الإجمالي</span>
             <span className="text-2xl font-black text-primary">{formatDZD(total)}</span>
