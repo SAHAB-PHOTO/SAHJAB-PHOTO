@@ -78,7 +78,7 @@ function Hero() {
             <span className="text-4xl">🎁</span>
             <div>
               <p className="text-lg font-black">قسيمة 1000 دج</p>
-              <p className="text-sm text-white/90">لأول طلب — استخدم: سهجاب</p>
+              <p className="text-sm text-white/90">لأول طلب — استخدم: RAFIK</p>
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-secondary to-teal-600 p-5 text-white">
@@ -161,9 +161,31 @@ function FlashSection() {
   );
 }
 
+function AnnouncementBar() {
+  const items = [
+    "🚚 توصيل مجاني للطلبات فوق 5000 دج",
+    "💳 ادفع بـ CIB · الذهبية · BaridiMob · أو عند الاستلام",
+    "🎁 خصم 1000 دج لأول طلب — استخدم RAFIK",
+    "⚡ عروض البرق تتجدّد كل يوم",
+    "🇩🇿 توصيل لكل 58 ولاية",
+    "🛡️ حماية المشتري واسترجاع خلال 7 أيام",
+  ];
+  const strip = [...items, ...items];
+  return (
+    <div className="overflow-hidden border-y border-border bg-secondary/10">
+      <div className="flex w-max animate-marquee gap-8 py-2 text-sm font-semibold text-secondary">
+        {strip.map((t, i) => (
+          <span key={i} className="whitespace-nowrap">{t}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div className="pb-8">
+      <AnnouncementBar />
       <Hero />
       <CategoryGrid />
       <FlashSection />

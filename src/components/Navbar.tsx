@@ -37,7 +37,7 @@ export function Navbar() {
           <p>🇩🇿 توصيل لكل الولايات 58 · دفع عند الاستلام متاح</p>
           <div className="flex items-center gap-4">
             <Link to="/seller" className="inline-flex items-center gap-1 hover:text-accent">
-              <Store size={13} /> بِع على سهجاب
+              <Store size={13} /> بِع على RafikExpress
             </Link>
             <span className="inline-flex items-center gap-1">
               <Globe size={13} /> العربية · دج
@@ -61,10 +61,10 @@ export function Navbar() {
 
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl gradient-brand text-lg font-black text-white shadow-card">
-            س
+            R
           </span>
-          <span className="hidden text-2xl font-black tracking-tight sm:block">
-            سهجاب<span className="text-primary">ماركت</span>
+          <span className="hidden text-2xl font-black tracking-tight sm:block" dir="ltr">
+            Rafik<span className="text-primary">Express</span>
           </span>
         </Link>
 
@@ -172,7 +172,7 @@ export function Navbar() {
             </div>
             <Link to="/account" onClick={() => setOpenMobile(false)} className="block rounded-lg px-3 py-2 hover:bg-muted">👤 حسابي</Link>
             <Link to="/wishlist" onClick={() => setOpenMobile(false)} className="block rounded-lg px-3 py-2 hover:bg-muted">❤️ المفضلة</Link>
-            <Link to="/seller" onClick={() => setOpenMobile(false)} className="block rounded-lg px-3 py-2 hover:bg-muted">🏪 بِع على سهجاب</Link>
+            <Link to="/seller" onClick={() => setOpenMobile(false)} className="block rounded-lg px-3 py-2 hover:bg-muted">🏪 بِع على RafikExpress</Link>
             <div className="my-3 border-t border-border" />
             <p className="px-3 pb-1 text-xs font-bold text-muted-foreground">الفئات</p>
             {categories.map((c) => (

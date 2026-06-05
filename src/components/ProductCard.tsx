@@ -44,7 +44,7 @@ export function ProductCard({ product }: { product: Product }) {
         <ProductImage product={product} className="aspect-square" />
         <div className="absolute right-2 top-2 flex flex-col gap-1">
           {off > 0 && <Badge tone="dark">-{arDigits(off)}%</Badge>}
-          {product.choice && <Badge tone="primary">اختيار سهجاب</Badge>}
+          {product.choice && <Badge tone="primary">اختيار رفيق</Badge>}
         </div>
       </Link>
 

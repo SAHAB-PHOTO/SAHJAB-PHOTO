@@ -18,7 +18,7 @@ export default function OrderSuccess() {
         </div>
         <h1 className="mt-5 text-2xl font-black">تم تأكيد طلبك بنجاح! 🎉</h1>
         <p className="mt-2 text-muted-foreground">
-          شكراً لتسوّقك من سهجاب ماركت. سنرسل لك تأكيداً عبر الرسائل القصيرة.
+          شكراً لتسوّقك من RafikExpress. سنرسل لك تأكيداً عبر الرسائل القصيرة.
         </p>
 
         <div className="mt-5 space-y-2 rounded-xl bg-muted/50 p-4 text-right text-sm">

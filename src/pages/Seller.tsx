@@ -18,7 +18,7 @@ export default function Seller() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black">لوحة تحكم البائع 🏪</h1>
-          <p className="text-sm text-muted-foreground">أهلاً بك في مركز إدارة متجرك على سهجاب</p>
+          <p className="text-sm text-muted-foreground">أهلاً بك في مركز إدارة متجرك على RafikExpress</p>
         </div>
         <Button><Plus size={18} /> أضف منتجاً جديداً</Button>
       </div>
@@ -69,7 +69,7 @@ export default function Seller() {
 
       {/* CTA */}
       <div className="mt-5 rounded-2xl gradient-brand p-6 text-center text-white">
-        <h3 className="text-xl font-black">ابدأ البيع على سهجاب اليوم</h3>
+        <h3 className="text-xl font-black">ابدأ البيع على RafikExpress اليوم</h3>
         <p className="mt-1 text-sm text-white/90">انضم لآلاف التجار الجزائريين · عمولة منخفضة · دفع أسبوعي · دعم كامل</p>
         <Button variant="accent" size="lg" className="mt-4">سجّل متجرك مجاناً</Button>
       </div>

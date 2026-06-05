@@ -83,7 +83,7 @@ export default function ProductPage() {
         {/* info */}
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {product.choice && <Badge tone="primary">⭐ اختيار سهجاب</Badge>}
+            {product.choice && <Badge tone="primary">⭐ اختيار رفيق</Badge>}
             {product.freeShipping && <Badge tone="success">توصيل مجاني</Badge>}
             {off > 0 && <Badge tone="dark">-{arDigits(off)}%</Badge>}
           </div>

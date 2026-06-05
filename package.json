@@ -1,9 +1,9 @@
 {
-  "name": "sahjab-market",
+  "name": "rafikexpress",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "سهجاب ماركت — متجر إلكتروني جزائري احترافي (Algerian e-commerce marketplace)",
+  "description": "RafikExpress — متجر إلكتروني جزائري احترافي (Algerian e-commerce marketplace)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

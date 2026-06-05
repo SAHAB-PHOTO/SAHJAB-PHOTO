@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "sahjab.wishlist.v1";
+const STORAGE_KEY = "rafikexpress.wishlist.v1";
 
 interface WishlistValue {
   ids: string[];

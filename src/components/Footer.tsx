@@ -27,13 +27,13 @@ export function Footer() {
         <div className="col-span-2">
           <div className="mb-3 flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl gradient-brand text-lg font-black text-white">
-              س
+              R
             </span>
-            <span className="text-xl font-black">سهجاب ماركت</span>
+            <span className="text-xl font-black" dir="ltr">RafikExpress</span>
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            المتجر الإلكتروني الجزائري الأول. ملايين المنتجات بأسعار الجملة، توصيل سريع
-            لكل الولايات، وكل وسائل الدفع الإلكتروني الجزائرية والدولية في مكان واحد.
+            RafikExpress — المتجر الإلكتروني الجزائري الأول. ملايين المنتجات بأسعار الجملة،
+            توصيل سريع لكل الولايات، وكل وسائل الدفع الإلكتروني الجزائرية والدولية في مكان واحد.
           </p>
           <div className="mt-4 flex gap-2">
             {[Facebook, Instagram, Send].map((Icon, i) => (
@@ -71,7 +71,7 @@ export function Footer() {
           <h4 className="mb-3 font-bold">تواصل معنا</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2"><Phone size={15} /> 0770 00 00 00</li>
-            <li className="flex items-center gap-2"><Mail size={15} /> support@sahjab.dz</li>
+            <li className="flex items-center gap-2"><Mail size={15} /> support@rafikexpress.dz</li>
             <li className="flex items-center gap-2"><MapPin size={15} /> الجزائر العاصمة</li>
           </ul>
         </div>
@@ -98,7 +98,7 @@ export function Footer() {
       </div>
 
       <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} سهجاب ماركت — جميع الحقوق محفوظة · صُنع في الجزائر 🇩🇿
+        © {new Date().getFullYear()} RafikExpress — جميع الحقوق محفوظة · صُنع في الجزائر 🇩🇿
       </div>
     </footer>
   );

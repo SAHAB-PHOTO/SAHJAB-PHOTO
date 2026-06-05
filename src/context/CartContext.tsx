@@ -24,7 +24,7 @@ type Action =
   | { type: "CLEAR" }
   | { type: "HYDRATE"; items: CartItem[] };
 
-const STORAGE_KEY = "sahjab.cart.v1";
+const STORAGE_KEY = "rafikexpress.cart.v1";
 
 function reducer(state: CartState, action: Action): CartState {
   switch (action.type) {

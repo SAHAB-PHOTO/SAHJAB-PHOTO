@@ -10,7 +10,7 @@ export interface Product {
   emoji: string;
   gradient: string;
   freeShipping: boolean;
-  choice?: boolean; // "اختيار سهجاب" badge
+  choice?: boolean; // "اختيار رفيق" badge
   flash?: boolean;
   store: string;
   description: string;

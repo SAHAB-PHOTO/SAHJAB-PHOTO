@@ -98,13 +98,13 @@ export default function CartPage() {
               <input
                 value={coupon}
                 onChange={(e) => setCoupon(e.target.value)}
-                placeholder="رمز القسيمة (سهجاب)"
+                placeholder="رمز القسيمة (RAFIK)"
                 className="h-10 w-full rounded-lg border border-border bg-background pr-9 pl-3 text-sm outline-none"
               />
             </div>
             <Button
               variant="outline"
-              onClick={() => setApplied(coupon.trim().toLowerCase() === "سهجاب" || coupon.trim().toLowerCase() === "sahjab")}
+              onClick={() => setApplied(["rafik", "رفيق"].includes(coupon.trim().toLowerCase()))}
             >
               تطبيق
             </Button>
