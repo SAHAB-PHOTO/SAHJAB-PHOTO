@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Send, Phone, Mail, MapPin } from "lucide-react";
 import { paymentMethods } from "@/data/payments";
+import { couriers } from "@/data/couriers";
 
 export function Footer() {
   return (
@@ -91,6 +92,21 @@ export function Footer() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold"
               >
                 <span className="text-base">{p.icon}</span> {p.name}
+              </span>
+            ))}
+          </div>
+
+          <p className="mb-3 mt-6 text-center text-xs font-bold text-muted-foreground">
+            شركاء التوصيل في الجزائر 🇩🇿
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {couriers.map((c) => (
+              <span
+                key={c.id}
+                title={`${c.latin} · ${c.eta}`}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold"
+              >
+                <span className="text-base">{c.emoji}</span> {c.name}
               </span>
             ))}
           </div>

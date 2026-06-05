@@ -5,7 +5,7 @@ import { formatDZD } from "@/lib/utils";
 
 export default function OrderSuccess() {
   const { state } = useLocation() as {
-    state?: { orderId?: string; total?: number; method?: string };
+    state?: { orderId?: string; total?: number; method?: string; courier?: string; eta?: string };
   };
   const orderId = state?.orderId ?? "DZ000000";
 
@@ -24,8 +24,9 @@ export default function OrderSuccess() {
         <div className="mt-5 space-y-2 rounded-xl bg-muted/50 p-4 text-right text-sm">
           <Row label="رقم الطلب" value={`#${orderId}`} />
           {state?.method && <Row label="طريقة الدفع" value={state.method} />}
+          {state?.courier && <Row label="شركة التوصيل" value={state.courier} />}
           {state?.total != null && <Row label="الإجمالي" value={formatDZD(state.total)} bold />}
-          <Row label="التوصيل المتوقّع" value="خلال 48 – 72 ساعة" />
+          <Row label="التوصيل المتوقّع" value={state?.eta ?? "خلال 48 – 72 ساعة"} />
         </div>
 
         {/* tracker */}

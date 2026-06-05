@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Lock, CheckCircle2, Truck, Building2, CreditCard, Wallet, Banknote } from "lucide-react";
+import { Lock, CheckCircle2, Truck, Building2, CreditCard, Wallet, Banknote, Star } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { paymentMethods, type PaymentMethod } from "@/data/payments";
+import { couriers, getCourier } from "@/data/couriers";
 import { wilayas } from "@/data/wilayas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,17 @@ export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
   const navigate = useNavigate();
   const [delivery, setDelivery] = useState<"home" | "desk">("home");
+  const [courierId, setCourierId] = useState<string>("yalidine");
   const [pay, setPay] = useState<string>("cod");
   const [processing, setProcessing] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", wilaya: "", address: "" });
 
-  const shipping = delivery === "home" ? (subtotal >= 5000 ? 0 : 600) : 350;
+  const courier = getCourier(courierId)!;
+  const baseFee = delivery === "home" ? courier.homeFee : courier.deskFee;
+  // التوصيل المجاني للمنزل عند تجاوز 5000 دج
+  const shipping = delivery === "home" && subtotal >= 5000 ? 0 : baseFee;
   const total = subtotal + shipping;
+  const codBlocked = pay === "cod" && !courier.cod;
 
   const grouped = useMemo(() => {
     const map = new Map<PaymentMethod["group"], PaymentMethod[]>();
@@ -36,7 +42,7 @@ export default function CheckoutPage() {
     return [...map.entries()];
   }, []);
 
-  const valid = form.name && form.phone.length >= 9 && form.wilaya;
+  const valid = !!form.name && form.phone.length >= 9 && !!form.wilaya && !codBlocked;
 
   if (items.length === 0) {
     return (
@@ -55,7 +61,14 @@ export default function CheckoutPage() {
       const orderId = "DZ" + Math.floor(100000 + Math.random() * 900000);
       clear();
       navigate("/order-success", {
-        state: { orderId, total, pay, method: paymentMethods.find((p) => p.id === pay)?.name },
+        state: {
+          orderId,
+          total,
+          pay,
+          method: paymentMethods.find((p) => p.id === pay)?.name,
+          courier: courier.name,
+          eta: courier.eta,
+        },
       });
     }, 1400);
   };
@@ -99,24 +112,70 @@ export default function CheckoutPage() {
                 onClick={() => setDelivery("home")}
                 Icon={Truck}
                 title="التوصيل إلى المنزل"
-                desc="48 – 72 ساعة"
-                price={subtotal >= 5000 ? "مجاني" : formatDZD(600)}
+                desc={courier.eta}
+                price={subtotal >= 5000 ? "مجاني" : formatDZD(courier.homeFee)}
               />
               <DeliveryOption
                 active={delivery === "desk"}
                 onClick={() => setDelivery("desk")}
                 Icon={Building2}
                 title="التوصيل إلى المكتب (Stop Desk)"
-                desc="24 – 48 ساعة"
-                price={formatDZD(350)}
+                desc={courier.eta}
+                price={formatDZD(courier.deskFee)}
               />
             </div>
           </section>
 
-          {/* 2. payment */}
+          {/* 2. courier */}
           <section className="rounded-xl border border-border bg-card p-5">
             <h2 className="mb-1 flex items-center gap-2 text-lg font-black">
               <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-white">2</span>
+              شركة التوصيل
+            </h2>
+            <p className="mb-4 text-xs text-muted-foreground">
+              اختر شركة التوصيل المناسبة لك — كلها شركات جزائرية معتمدة 🇩🇿
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {couriers.map((c) => {
+                const fee = delivery === "home" && subtotal >= 5000 ? 0 : delivery === "home" ? c.homeFee : c.deskFee;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setCourierId(c.id)}
+                    className={`flex items-center gap-3 rounded-xl border-2 p-3 text-right transition ${
+                      courierId === c.id
+                        ? "border-primary bg-primary/5 shadow-card"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="text-2xl">{c.emoji}</span>
+                    <span className="flex-1">
+                      <span className="flex flex-wrap items-center gap-1.5 text-sm font-bold">
+                        {c.name}
+                        {c.note && <Badge tone="accent">{c.note}</Badge>}
+                      </span>
+                      <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-0.5">
+                          <Star size={11} className="fill-accent text-accent" /> {c.rating}
+                        </span>
+                        · {c.eta} · {c.wilayas} ولاية
+                        {c.cod ? " · دفع عند الاستلام" : ""}
+                      </span>
+                    </span>
+                    <span className="text-sm font-bold text-primary">
+                      {fee === 0 ? "مجاني" : formatDZD(fee)}
+                    </span>
+                    {courierId === c.id && <CheckCircle2 size={18} className="shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 3. payment */}
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="mb-1 flex items-center gap-2 text-lg font-black">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs text-white">3</span>
               طريقة الدفع
             </h2>
             <p className="mb-4 text-xs text-muted-foreground">
@@ -172,9 +231,14 @@ export default function CheckoutPage() {
                 </p>
               </div>
             )}
-            {pay === "cod" && (
+            {pay === "cod" && !codBlocked && (
               <p className="mt-4 rounded-xl bg-secondary/10 p-3 text-sm text-secondary">
-                💵 ستدفع المبلغ نقداً للموزّع عند استلام طلبك. متاح في كل الولايات الـ58.
+                💵 ستدفع المبلغ نقداً لموزّع {courier.name} عند استلام طلبك.
+              </p>
+            )}
+            {codBlocked && (
+              <p className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm font-semibold text-destructive">
+                ⚠️ شركة {courier.name} لا تدعم الدفع عند الاستلام — اختر شركة توصيل أخرى أو وسيلة دفع إلكترونية.
               </p>
             )}
           </section>
@@ -195,7 +259,10 @@ export default function CheckoutPage() {
           </div>
           <dl className="space-y-2 border-t border-border pt-3 text-sm">
             <div className="flex justify-between"><dt className="text-muted-foreground">المجموع الفرعي</dt><dd className="font-semibold">{formatDZD(subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-muted-foreground">التوصيل</dt><dd className="font-semibold">{shipping === 0 ? "مجاني" : formatDZD(shipping)}</dd></div>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">التوصيل عبر {courier.emoji} {courier.name}</dt>
+              <dd className="font-semibold">{shipping === 0 ? "مجاني" : formatDZD(shipping)}</dd>
+            </div>
           </dl>
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="font-bold">الإجمالي</span>
