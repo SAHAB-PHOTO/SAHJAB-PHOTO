@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="طيف — مختبر الضوء واللون للمصوّر الفوتوغرافي. حلّل التكوين والألوان والمزاج لصورك داخل متصفحك بخصوصية تامة." />
+  <title>طيف — TAYF · مختبر الضوء واللون</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- خلفية متحركة -->
+  <div class="aurora" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <div class="grain"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="34" height="34">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff7e5f"/>
+              <stop offset=".5" stop-color="#feb47b"/>
+              <stop offset="1" stop-color="#7ee8fa"/>
+            </linearGradient>
+          </defs>
+          <circle cx="24" cy="24" r="20" fill="none" stroke="url(#g)" stroke-width="3"/>
+          <circle cx="24" cy="24" r="8" fill="url(#g)"/>
+          <g stroke="url(#g)" stroke-width="2.4" stroke-linecap="round">
+            <line x1="24" y1="2" x2="24" y2="9"/>
+            <line x1="24" y1="39" x2="24" y2="46"/>
+            <line x1="2" y1="24" x2="9" y2="24"/>
+            <line x1="39" y1="24" x2="46" y2="24"/>
+          </g>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>طيف <span class="lat">TAYF</span></h1>
+        <p>مختبر الضوء واللون للمصوّر</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="privacy-pill" title="كل المعالجة تتم داخل متصفحك. صورك لا تغادر جهازك إطلاقاً.">
+        🔒 يعمل دون إنترنت · خصوصية كاملة
+      </span>
+    </div>
+  </header>
+
+  <main>
+    <!-- منطقة الإسقاط / الرفع -->
+    <section id="dropzone" class="dropzone" aria-label="ارفع صورة">
+      <div class="drop-inner">
+        <div class="drop-icon" aria-hidden="true">📷</div>
+        <h2>اسحب صورتك إلى هنا</h2>
+        <p>أو اخترها من جهازك — ثم دع <strong>طيف</strong> يحلّل ضوءها ولونها وتكوينها</p>
+        <label class="btn primary">
+          اختر صورة
+          <input type="file" id="fileInput" accept="image/*" hidden />
+        </label>
+        <button class="btn ghost" id="sampleBtn" type="button">جرّب صورة تجريبية ✨</button>
+        <p class="hint">JPG · PNG · WEBP — لا يُرفع شيء إلى أي خادم</p>
+      </div>
+    </section>
+
+    <!-- لوحة التحليل -->
+    <section id="studio" class="studio hidden" aria-live="polite">
+      <div class="studio-grid">
+        <!-- العمود الأيمن: الصورة + الطبقات -->
+        <div class="canvas-card card">
+          <div class="canvas-head">
+            <h3>المعاينة والتكوين</h3>
+            <div class="overlay-toggles" role="group" aria-label="طبقات التكوين">
+              <button class="chip" data-overlay="thirds" aria-pressed="true">القاعدة الثلثية</button>
+              <button class="chip" data-overlay="golden" aria-pressed="false">الحلزون الذهبي</button>
+              <button class="chip" data-overlay="diagonals" aria-pressed="false">الأقطار</button>
+              <button class="chip" data-overlay="weight" aria-pressed="true">مركز الثقل</button>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="view"></canvas>
+          </div>
+          <div class="canvas-actions">
+            <label class="btn small ghost">
+              صورة أخرى
+              <input type="file" id="fileInput2" accept="image/*" hidden />
+            </label>
+            <button class="btn small primary" id="downloadCard" type="button">⬇︎ نزّل بطاقة التحليل</button>
+          </div>
+        </div>
+
+        <!-- العمود الأيسر: النتائج -->
+        <div class="results">
+          <!-- درجة التكوين -->
+          <div class="card score-card">
+            <div class="score-ring">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" class="ring-bg"/>
+                <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/>
+              </svg>
+              <div class="score-num"><span id="scoreVal">—</span><small>/100</small></div>
+            </div>
+            <div class="score-meta">
+              <h3>درجة التكوين</h3>
+              <p id="scoreLabel">بانتظار التحليل…</p>
+              <ul id="tips" class="tips"></ul>
+            </div>
+          </div>
+
+          <!-- المزاج -->
+          <div class="card mood-card">
+            <h3>مزاج الصورة</h3>
+            <div class="mood-row">
+              <span id="moodBadge" class="mood-badge">—</span>
+              <div class="mood-bars">
+                <div class="bar"><label>الدفء</label><div class="track"><i id="barWarm"></i></div></div>
+                <div class="bar"><label>التشبّع</label><div class="track"><i id="barSat"></i></div></div>
+                <div class="bar"><label>التباين</label><div class="track"><i id="barContrast"></i></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- لوحة الألوان -->
+          <div class="card palette-card">
+            <div class="card-head">
+              <h3>لوحة الألوان السائدة</h3>
+              <span class="muted">انقر لنسخ الكود</span>
+            </div>
+            <div id="palette" class="palette"></div>
+          </div>
+
+          <!-- الهيستوجرام -->
+          <div class="card hist-card">
+            <h3>توزيع الإضاءة</h3>
+            <canvas id="hist" height="90"></canvas>
+            <p id="exposureNote" class="muted">—</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- شريط المعرفة -->
+    <section class="knowledge">
+      <h2>لماذا طيف مختلف؟</h2>
+      <div class="know-grid">
+        <article class="card know">
+          <span class="know-ico">🎯</span>
+          <h4>مدرّب لا محرّر</h4>
+          <p>لا يضيف فلاتر بل يكشف نقاط قوة وضعف تكوينك ويعلّمك كيف تفكّر كعدسة محترفة.</p>
+        </article>
+        <article class="card know">
+          <span class="know-ico">🧠</span>
+          <h4>تحليل بصري حقيقي</h4>
+          <p>يحسب مركز الثقل البصري عبر السطوع وكثافة الحواف، ويقارنه بنقاط القوة الذهبية.</p>
+        </article>
+        <article class="card know">
+          <span class="know-ico">🔒</span>
+          <h4>خصوصية مطلقة</h4>
+          <p>كل شيء داخل متصفحك عبر Canvas. صورك لا تُرفع، لا تُخزَّن، ولا تغادر جهازك.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>صُنع بشغف للمصوّرين · <span class="lat">TAYF — طيف</span> · يعمل بالكامل في المتصفح</p>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
