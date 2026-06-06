@@ -122,6 +122,8 @@ kbd{font-family:"Space Grotesk";background:#1c2030;border:1px solid var(--line);
 .modal-box h3{margin-bottom:1rem;font-size:1.2rem}
 .keys{list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.4rem}
 .keys li{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--muted)}
+.session-note{font-size:.82rem;color:var(--cool);background:rgba(126,232,250,.07);border:1px solid rgba(126,232,250,.2);padding:.6rem .8rem;border-radius:10px;margin-bottom:1rem}
+.modal-actions{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
 
 .judge-btn.compare:hover{background:var(--warm);color:#3a1500;border-color:transparent}
 

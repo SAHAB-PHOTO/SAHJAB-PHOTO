@@ -39,15 +39,15 @@
       <div class="cta-row">
         <label class="btn primary big">
           اختر صوراً
-          <input type="file" id="filesInput" accept="image/*" multiple hidden />
+          <input type="file" id="filesInput" accept="image/*,.cr2,.cr3,.nef,.arw,.raf,.orf,.rw2,.dng,.pef,.srw,.nrw,.sr2,.rwl" multiple hidden />
         </label>
         <label class="btn ghost big">
           📁 افتح مجلّداً كاملاً
-          <input type="file" id="folderInput" accept="image/*" webkitdirectory directory multiple hidden />
+          <input type="file" id="folderInput" webkitdirectory directory multiple hidden />
         </label>
         <button class="btn ghost big" id="demoBtn" type="button">جرّب بصور تجريبية ✨</button>
       </div>
-      <p class="hint">JPG · PNG · WEBP — لا يُرفع شيء إلى أي خادم. (دعم RAW ضمن خارطة الطريق)</p>
+      <p class="hint">JPG · PNG · WEBP · <strong>RAW</strong> (CR2/CR3/NEF/ARW/RAF/DNG…) — لا يُرفع شيء إلى أي خادم.</p>
 
       <div class="features">
         <div class="feat"><span>⚡</span><b>سرعة الكيبورد</b><small>تنقّل، تقييم نجوم، قبول/رفض دون لمس الفأرة</small></div>
@@ -82,9 +82,10 @@
           <div class="export-menu hidden" id="exportMenu">
             <button data-export="txt">📝 قائمة أسماء (.txt)<small>للّصق في فلتر Lightroom / Capture One</small></button>
             <button data-export="xmp">🏷️ ملفات XMP بالتقييمات (.zip)<small>تقييم + قبول/رفض تقرأها Lightroom مباشرة</small></button>
+            <button data-export="images">🖼️ الصور المقبولة نفسها (.zip)<small>تجميع الملفات الأصلية المقبولة في أرشيف واحد</small></button>
           </div>
         </div>
-        <label class="btn small ghost">+ صور<input type="file" id="addInput" accept="image/*" multiple hidden /></label>
+        <label class="btn small ghost">+ صور<input type="file" id="addInput" accept="image/*,.cr2,.cr3,.nef,.arw,.raf,.orf,.rw2,.dng,.pef,.srw,.nrw,.sr2,.rwl" multiple hidden /></label>
       </div>
     </header>
 
@@ -144,7 +145,11 @@
         <li><kbd>G</kbd> القفز لأفضل صورة في المجموعة الحالية</li>
         <li><kbd>C</kbd> مقارنة لقطات المجموعة جنباً إلى جنب</li>
       </ul>
-      <button class="btn primary" id="closeHelp">فهمت</button>
+      <p class="session-note" id="sessionNote">💾 تُحفظ قراراتك تلقائياً — أعد فتح المجلد لاحقاً لتستعيدها.</p>
+      <div class="modal-actions">
+        <button class="btn ghost small" id="clearSession">🗑️ مسح ذاكرة الجلسة</button>
+        <button class="btn primary" id="closeHelp">فهمت</button>
+      </div>
     </div>
   </div>
 

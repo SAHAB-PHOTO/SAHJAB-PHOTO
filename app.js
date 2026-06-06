@@ -19,17 +19,43 @@ const el = {
   btnPick: $('#btnPick'), btnReject: $('#btnReject'), btnZoom: $('#btnZoom'),
   navPrev: $('#navPrev'), navNext: $('#navNext'),
   exportBtn: $('#exportBtn'), exportMenu: $('#exportMenu'), helpBtn: $('#helpBtn'),
-  helpModal: $('#helpModal'), closeHelp: $('#closeHelp'),
+  helpModal: $('#helpModal'), closeHelp: $('#closeHelp'), clearSession: $('#clearSession'),
   btnCompare: $('#btnCompare'), compareModal: $('#compareModal'),
   compareGrid: $('#compareGrid'), compareTitle: $('#compareTitle'), closeCompare: $('#closeCompare'),
   toast: $('#toast'),
 };
 
-let items = [];          // { id, file, name, url, rating, flag, sharp, hash, group, thumbEl }
+let items = [];          // { id, file, name, url, isRaw, rating, flag, sharp, hash, group, thumbEl }
 let active = 0;          // فهرس الصورة المعروضة
 let filter = 'all';
 let analyzeQueue = [];   // عناصر بانتظار التحليل
 let analyzing = false;
+
+// امتدادات RAW المدعومة (عبر استخراج المعاينة JPEG المضمّنة)
+const RAW_EXT = ['cr2', 'cr3', 'nef', 'arw', 'raf', 'orf', 'rw2', 'dng', 'pef', 'srw', 'nrw', 'sr2', 'rwl', 'raw'];
+const IMG_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff', 'avif'];
+const extOf = (name) => (name.toLowerCase().match(/\.([^.]+)$/) || [, ''])[1];
+const isRawName = (name) => RAW_EXT.includes(extOf(name));
+const isSupported = (file) => file.type.startsWith('image/') || isRawName(file.name) || IMG_EXT.includes(extOf(file.name));
+
+// استخراج أكبر معاينة JPEG مضمّنة داخل ملف RAW (FFD8…FFD9)
+function extractEmbeddedJpeg(buffer) {
+  const b = new Uint8Array(buffer);
+  let best = null, bestLen = 0;
+  for (let i = 0; i + 2 < b.length; i++) {
+    if (b[i] === 0xff && b[i + 1] === 0xd8 && b[i + 2] === 0xff) {
+      for (let j = i + 3; j + 1 < b.length; j++) {
+        if (b[j] === 0xff && b[j + 1] === 0xd9) {
+          const len = j + 2 - i;
+          if (len > bestLen) { bestLen = len; best = [i, j + 2]; }
+          i = j + 1; break;
+        }
+      }
+    }
+  }
+  if (best && bestLen > 4000) return new Blob([b.slice(best[0], best[1])], { type: 'image/jpeg' });
+  return null;
+}
 
 /* ---------------------- أدوات مساعدة ---------------------- */
 function toast(msg, ms = 1800) {
@@ -39,24 +65,91 @@ function toast(msg, ms = 1800) {
   toast._t = setTimeout(() => el.toast.classList.remove('show'), ms);
 }
 
+/* ---------------------- حفظ الجلسة (IndexedDB) ---------------------- */
+let db = null;
+let savedMap = {};       // fp -> { rating, flag, sharp, hash }
+const fingerprint = (file) => `${file.name}__${file.size}__${file.lastModified}`;
+
+function openDB() {
+  return new Promise((res) => {
+    try {
+      const r = indexedDB.open('nukhba-db', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('decisions', { keyPath: 'fp' });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    } catch { res(null); }
+  });
+}
+function loadAllDecisions() {
+  return new Promise((res) => {
+    if (!db) return res({});
+    const out = {};
+    try {
+      const cur = db.transaction('decisions', 'readonly').objectStore('decisions').openCursor();
+      cur.onsuccess = (e) => { const c = e.target.result; if (c) { out[c.value.fp] = c.value; c.continue(); } else res(out); };
+      cur.onerror = () => res(out);
+    } catch { res(out); }
+  });
+}
+function saveDecision(it) {
+  if (!db || !it.fp) return;
+  const rec = { fp: it.fp, rating: it.rating, flag: it.flag, sharp: it.sharp, hash: it.hash != null ? it.hash.toString() : null };
+  savedMap[it.fp] = rec;
+  try { db.transaction('decisions', 'readwrite').objectStore('decisions').put(rec); } catch {}
+}
+function clearSession() {
+  savedMap = {};
+  if (db) { try { db.transaction('decisions', 'readwrite').objectStore('decisions').clear(); } catch {} }
+  toast('🗑️ مُسحت ذاكرة الجلسة');
+}
+
 /* ---------------------- استقبال الملفات ---------------------- */
-function addFiles(fileList) {
-  const incoming = [...fileList].filter((f) => f.type.startsWith('image/'));
+async function addFiles(fileList) {
+  const incoming = [...fileList].filter(isSupported);
   if (!incoming.length) { toast('لم يتم العثور على صور صالحة'); return; }
   incoming.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+  let rawFails = 0, restored = 0;
   for (const file of incoming) {
     const item = {
       id: 'i' + Math.random().toString(36).slice(2),
-      file, name: file.name, url: URL.createObjectURL(file),
+      file, name: file.name, url: null, isRaw: isRawName(file.name),
+      fp: fingerprint(file),
       rating: 0, flag: null, sharp: null, hash: null, group: null, thumbEl: null,
     };
+
+    if (item.isRaw) {
+      try {
+        const blob = extractEmbeddedJpeg(await file.arrayBuffer());
+        if (blob) item.url = URL.createObjectURL(blob);
+        else { rawFails++; continue; }
+      } catch { rawFails++; continue; }
+    } else {
+      item.url = URL.createObjectURL(file);
+    }
+
+    // استعادة القرارات/التحليل المحفوظة لهذا الملف (إن وُجدت)
+    const saved = savedMap[item.fp];
+    if (saved) {
+      item.rating = saved.rating || 0;
+      item.flag = saved.flag || null;
+      item.sharp = saved.sharp ?? null;
+      item.hash = saved.hash != null ? BigInt(saved.hash) : null;
+      if (item.flag || item.rating) restored++;
+    }
+
     items.push(item);
-    analyzeQueue.push(item);
+    if (item.sharp == null || item.hash == null) analyzeQueue.push(item);
   }
-  if (el.app.classList.contains('hidden')) startApp();
+
+  if (el.app.classList.contains('hidden') && items.length) startApp();
+  if (items.some((i) => i.hash != null)) groupBursts();
   buildFilmstrip();
   runAnalysisQueue();
   updateStats();
+
+  if (rawFails) toast(`تعذّر استخراج معاينة من ${rawFails} ملف RAW`, 2600);
+  else if (restored) toast(`💾 استُعيدت قرارات ${restored} صورة من جلسة سابقة`, 2600);
 }
 
 function startApp() {
@@ -148,6 +241,7 @@ async function runAnalysisQueue() {
     item.thumbEl?.classList.add('busy');
     await analyzeItem(item);
     item.thumbEl?.classList.remove('busy');
+    saveDecision(item);
     refreshThumb(item);
     if (items[active] === item) showActive();
   }
@@ -271,12 +365,14 @@ function visibleItems() {
 function setFlag(flag) {
   const it = items[active]; if (!it) return;
   it.flag = it.flag === flag ? null : flag;
+  saveDecision(it);
   refreshThumb(it); showActive(); updateStats();
   if (it.flag) nextImage();
 }
 function setRating(n) {
   const it = items[active]; if (!it) return;
   it.rating = it.rating === n ? 0 : n;
+  saveDecision(it);
   refreshThumb(it); showActive(); updateStats();
 }
 function nextImage() {
@@ -357,6 +453,7 @@ function openCompare() {
 function chooseWinner(winner, group) {
   for (const g of group) {
     g.flag = g === winner ? 'pick' : 'reject';
+    saveDecision(g);
     refreshThumb(g);
   }
   active = items.indexOf(winner);
@@ -463,6 +560,26 @@ function exportXmp() {
   toast(`تم تصدير ${files.length} ملف XMP داخل ZIP 🏷️`);
 }
 
+// تصدير الملفات الأصلية المقبولة نفسها داخل ZIP
+async function exportImages() {
+  const picks = items.filter((i) => i.flag === 'pick' || i.rating >= 3);
+  if (!picks.length) { toast('لا توجد صور مختارة بعد (قبول أو ★3+)'); return; }
+  toast(`⏳ يجري تجميع ${picks.length} صورة…`, 4000);
+  const files = [];
+  for (const it of picks) {
+    const buf = await it.file.arrayBuffer();
+    files.push({ name: it.name, data: new Uint8Array(buf) });
+  }
+  const blob = buildZip(files);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nukhba-picks.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  const mb = (blob.size / 1048576).toFixed(1);
+  toast(`تم تصدير ${files.length} صورة (${mb} م.ب) 🖼️`);
+}
+
 /* ---------------------- التصدير ---------------------- */
 function exportPicks() {
   const picks = items.filter((i) => i.flag === 'pick' || i.rating >= 3);
@@ -543,7 +660,8 @@ el.exportMenu.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-export]'); if (!btn) return;
   el.exportMenu.classList.add('hidden');
   if (btn.dataset.export === 'txt') exportPicks();
-  else exportXmp();
+  else if (btn.dataset.export === 'xmp') exportXmp();
+  else exportImages();
 });
 document.addEventListener('click', () => el.exportMenu.classList.add('hidden'));
 
@@ -561,6 +679,7 @@ el.filters.addEventListener('click', (e) => {
 
 el.helpBtn.addEventListener('click', () => el.helpModal.classList.remove('hidden'));
 el.closeHelp.addEventListener('click', () => el.helpModal.classList.add('hidden'));
+el.clearSession.addEventListener('click', clearSession);
 el.helpModal.addEventListener('click', (e) => { if (e.target === el.helpModal) el.helpModal.classList.add('hidden'); });
 
 // لوحة المفاتيح
@@ -585,3 +704,9 @@ document.addEventListener('keydown', (e) => {
 // السحب والإفلات على كامل النافذة
 ['dragover', 'drop'].forEach((ev) => window.addEventListener(ev, (e) => e.preventDefault()));
 window.addEventListener('drop', (e) => { if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
+
+// تهيئة قاعدة البيانات وتحميل القرارات المحفوظة قبل أي استيراد
+(async () => {
+  db = await openDB();
+  savedMap = await loadAllDecisions();
+})();
