@@ -1,559 +1,425 @@
 /* ============================================================
-   طيف — TAYF · مختبر الضوء واللون
-   تحليل بصري كامل داخل المتصفح عبر Canvas. لا خوادم، لا رفع.
+   نُخبة — Nukhba · محطّة الفرز الفوري
+   فرز الصور بالكامل داخل المتصفح: كشف الحدّة (Laplacian)،
+   تجميع اللقطات المتسلسلة (بصمة إدراكية)، فرز بالكيبورد، تصدير.
+   لا خوادم · لا رفع · يعمل دون إنترنت.
    ============================================================ */
 
 const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
 
-const els = {
-  dropzone: $('#dropzone'),
-  studio: $('#studio'),
-  view: $('#view'),
-  hist: $('#hist'),
-  fileInput: $('#fileInput'),
-  fileInput2: $('#fileInput2'),
-  sampleBtn: $('#sampleBtn'),
-  scoreVal: $('#scoreVal'),
-  scoreLabel: $('#scoreLabel'),
-  ringFg: $('#ringFg'),
-  tips: $('#tips'),
-  moodBadge: $('#moodBadge'),
-  barWarm: $('#barWarm'),
-  barSat: $('#barSat'),
-  barContrast: $('#barContrast'),
-  palette: $('#palette'),
-  exposureNote: $('#exposureNote'),
-  downloadCard: $('#downloadCard'),
+const el = {
+  landing: $('#landing'), app: $('#app'),
+  filesInput: $('#filesInput'), folderInput: $('#folderInput'),
+  addInput: $('#addInput'), demoBtn: $('#demoBtn'),
+  stats: $('#stats'), filters: $('#filters'),
+  stage: $('#stage'), mainImg: $('#mainImg'), badgeOverlay: $('#badgeOverlay'),
+  sharpFill: $('#sharpFill'), sharpVal: $('#sharpVal'),
+  filmstrip: $('#filmstrip'), stars: $('#stars'),
+  btnPick: $('#btnPick'), btnReject: $('#btnReject'), btnZoom: $('#btnZoom'),
+  navPrev: $('#navPrev'), navNext: $('#navNext'),
+  exportBtn: $('#exportBtn'), helpBtn: $('#helpBtn'),
+  helpModal: $('#helpModal'), closeHelp: $('#closeHelp'),
   toast: $('#toast'),
 };
 
-const ctx = els.view.getContext('2d', { willReadFrequently: true });
-const histCtx = els.hist.getContext('2d');
-
-// الحالة الحالية للتحليل
-let state = {
-  img: null,
-  analysis: null,
-  overlays: { thirds: true, golden: false, diagonals: false, weight: true },
-};
+let items = [];          // { id, file, name, url, rating, flag, sharp, hash, group, thumbEl }
+let active = 0;          // فهرس الصورة المعروضة
+let filter = 'all';
+let analyzeQueue = [];   // عناصر بانتظار التحليل
+let analyzing = false;
 
 /* ---------------------- أدوات مساعدة ---------------------- */
-function toast(msg) {
-  els.toast.textContent = msg;
-  els.toast.classList.add('show');
+function toast(msg, ms = 1800) {
+  el.toast.textContent = msg;
+  el.toast.classList.add('show');
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => els.toast.classList.remove('show'), 1800);
+  toast._t = setTimeout(() => el.toast.classList.remove('show'), ms);
 }
 
-function rgbToHex(r, g, b) {
-  return '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
-}
-
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-
-/* ---------------------- تحميل الصورة ---------------------- */
-function loadImage(src) {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = () => {
-    state.img = img;
-    els.dropzone.classList.add('hidden');
-    els.studio.classList.remove('hidden');
-    analyze();
-    els.studio.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-  img.onerror = () => toast('تعذّر تحميل الصورة');
-  img.src = src;
-}
-
-function handleFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('اختر ملف صورة صالحاً'); return; }
-  const reader = new FileReader();
-  reader.onload = (e) => loadImage(e.target.result);
-  reader.readAsDataURL(file);
-}
-
-/* ---------------------- محرّك التحليل ---------------------- */
-function analyze() {
-  const img = state.img;
-  // أبعاد العرض على الشاشة
-  const maxW = 900;
-  const scale = Math.min(1, maxW / img.naturalWidth);
-  const W = Math.round(img.naturalWidth * scale);
-  const H = Math.round(img.naturalHeight * scale);
-  els.view.width = W;
-  els.view.height = H;
-
-  // ارسم على لوحة تحليل صغيرة لأداء أسرع
-  const aW = 220;
-  const aH = Math.max(1, Math.round((aW * H) / W));
-  const aCanvas = document.createElement('canvas');
-  aCanvas.width = aW; aCanvas.height = aH;
-  const aCtx = aCanvas.getContext('2d', { willReadFrequently: true });
-  aCtx.drawImage(img, 0, 0, aW, aH);
-  const data = aCtx.getImageData(0, 0, aW, aH).data;
-
-  const analysis = {
-    W, H,
-    palette: extractPalette(data, aW, aH),
-    mood: computeMood(data),
-    histogram: computeHistogram(data),
-    weight: computeVisualWeight(data, aW, aH),
-  };
-  analysis.composition = scoreComposition(analysis.weight, analysis.mood, analysis.histogram);
-  state.analysis = analysis;
-
-  render();
-  renderResults(analysis);
-}
-
-/* استخراج لوحة الألوان: تكميم لوني (k-means مبسّط) */
-function extractPalette(data, w, h) {
-  const samples = [];
-  const step = 4 * 3; // كل 3 بكسلات
-  for (let i = 0; i < data.length; i += step) {
-    if (data[i + 3] < 125) continue; // تجاهل الشفاف
-    samples.push([data[i], data[i + 1], data[i + 2]]);
+/* ---------------------- استقبال الملفات ---------------------- */
+function addFiles(fileList) {
+  const incoming = [...fileList].filter((f) => f.type.startsWith('image/'));
+  if (!incoming.length) { toast('لم يتم العثور على صور صالحة'); return; }
+  incoming.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  for (const file of incoming) {
+    const item = {
+      id: 'i' + Math.random().toString(36).slice(2),
+      file, name: file.name, url: URL.createObjectURL(file),
+      rating: 0, flag: null, sharp: null, hash: null, group: null, thumbEl: null,
+    };
+    items.push(item);
+    analyzeQueue.push(item);
   }
-  const K = 6;
-  // تهيئة المراكز عشوائياً من العينات
-  let centers = [];
-  for (let k = 0; k < K; k++) centers.push(samples[Math.floor(Math.random() * samples.length)].slice());
-
-  for (let iter = 0; iter < 8; iter++) {
-    const sums = Array.from({ length: K }, () => [0, 0, 0, 0]);
-    for (const s of samples) {
-      let best = 0, bd = Infinity;
-      for (let k = 0; k < K; k++) {
-        const c = centers[k];
-        const d = (s[0]-c[0])**2 + (s[1]-c[1])**2 + (s[2]-c[2])**2;
-        if (d < bd) { bd = d; best = k; }
-      }
-      sums[best][0] += s[0]; sums[best][1] += s[1]; sums[best][2] += s[2]; sums[best][3]++;
-    }
-    for (let k = 0; k < K; k++) {
-      if (sums[k][3] > 0) {
-        centers[k] = [sums[k][0]/sums[k][3], sums[k][1]/sums[k][3], sums[k][2]/sums[k][3], sums[k][3]];
-      } else {
-        centers[k] = samples[Math.floor(Math.random()*samples.length)].concat(0);
-      }
-    }
-  }
-  // رتّب حسب الحجم (الأكثر شيوعاً أولاً)
-  centers.sort((a, b) => (b[3]||0) - (a[3]||0));
-  return centers.map((c) => ({
-    hex: rgbToHex(c[0], c[1], c[2]),
-    rgb: [Math.round(c[0]), Math.round(c[1]), Math.round(c[2])],
-    weight: c[3] || 0,
-  }));
+  if (el.app.classList.contains('hidden')) startApp();
+  buildFilmstrip();
+  runAnalysisQueue();
+  updateStats();
 }
 
-/* حساب المزاج: الدفء، التشبّع، التباين */
-function computeMood(data) {
-  let r = 0, g = 0, b = 0, n = 0;
-  let satSum = 0, lumSum = 0, lumSq = 0;
-  for (let i = 0; i < data.length; i += 16) {
-    if (data[i + 3] < 125) continue;
-    const R = data[i], G = data[i + 1], B = data[i + 2];
-    r += R; g += G; b += B; n++;
-    const mx = Math.max(R, G, B), mn = Math.min(R, G, B);
-    satSum += mx === 0 ? 0 : (mx - mn) / mx;
-    const lum = 0.2126 * R + 0.7152 * G + 0.0722 * B;
-    lumSum += lum; lumSq += lum * lum;
-  }
-  r /= n; g /= n; b /= n;
-  const sat = satSum / n;
-  const meanLum = lumSum / n;
-  const variance = lumSq / n - meanLum * meanLum;
-  const contrast = Math.sqrt(Math.max(0, variance)) / 128; // 0..~1
-  // الدفء: ميل نحو الأحمر مقابل الأزرق
-  const warmth = clamp(0.5 + (r - b) / 255, 0, 1);
-
-  let label;
-  if (warmth > 0.58 && sat > 0.35) label = '☀️ دافئ ونابض';
-  else if (warmth > 0.55) label = '🔥 دافئ وهادئ';
-  else if (warmth < 0.43 && contrast > 0.45) label = '🌊 بارد درامي';
-  else if (warmth < 0.45) label = '❄️ بارد وحالم';
-  else if (contrast > 0.5) label = '🎬 سينمائي متباين';
-  else if (sat < 0.2) label = '🕊️ هادئ مونوكروم';
-  else label = '🎨 متوازن';
-
-  return { warmth, sat: clamp(sat, 0, 1), contrast: clamp(contrast, 0, 1), label, meanLum };
+function startApp() {
+  el.landing.classList.add('hidden');
+  el.app.classList.remove('hidden');
+  active = 0;
+  showActive();
 }
 
-/* الهيستوجرام (السطوع) */
-function computeHistogram(data) {
-  const bins = new Array(64).fill(0);
-  for (let i = 0; i < data.length; i += 8) {
-    if (data[i + 3] < 125) continue;
-    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    bins[Math.min(63, Math.floor(lum / 4))]++;
-  }
-  const max = Math.max(...bins, 1);
-  // نسبة الظلال والإضاءات العالية
-  const total = bins.reduce((a, b) => a + b, 0) || 1;
-  const shadows = bins.slice(0, 10).reduce((a, b) => a + b, 0) / total;
-  const highlights = bins.slice(54).reduce((a, b) => a + b, 0) / total;
-  return { bins, max, shadows, highlights };
+/* ---------------------- التحليل المحلي ---------------------- */
+// لوحة صغيرة مشتركة للتحليل
+const aCanvas = document.createElement('canvas');
+const aCtx = aCanvas.getContext('2d', { willReadFrequently: true });
+
+function analyzeItem(item) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // حجم تحليل صغير لسرعة عالية
+      const S = 256;
+      const ratio = img.naturalHeight / img.naturalWidth;
+      const w = S, h = Math.max(1, Math.round(S * ratio));
+      aCanvas.width = w; aCanvas.height = h;
+      aCtx.drawImage(img, 0, 0, w, h);
+      const data = aCtx.getImageData(0, 0, w, h).data;
+
+      item.sharp = computeSharpness(data, w, h);
+      item.hash = computeAHash(img); // بصمة إدراكية 8×8
+      resolve();
+    };
+    img.onerror = () => { item.sharp = 0; item.hash = 0n; resolve(); };
+    img.src = item.url;
+  });
 }
 
-/* خريطة الثقل البصري: سطوع × كثافة الحواف، ثم مركز الكتلة */
-function computeVisualWeight(data, w, h) {
-  const lum = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      lum[y * w + x] = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    }
+// حدّة الصورة عبر تباين Laplacian — كلما زاد التباين زادت الحدّة
+function computeSharpness(data, w, h) {
+  const g = new Float32Array(w * h);
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    g[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
   }
-  let sumX = 0, sumY = 0, sumW = 0;
-  // حقل الأهمية = حافة (Sobel مبسّط) + انحراف السطوع عن المتوسط
-  let meanL = 0;
-  for (let i = 0; i < lum.length; i++) meanL += lum[i];
-  meanL /= lum.length;
-
+  let mean = 0, n = 0;
+  const lap = [];
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
-      const gx = lum[y*w + x+1] - lum[y*w + x-1];
-      const gy = lum[(y+1)*w + x] - lum[(y-1)*w + x];
-      const edge = Math.sqrt(gx*gx + gy*gy);
-      const dev = Math.abs(lum[y*w+x] - meanL);
-      const wgt = edge * 1.4 + dev * 0.6;
-      sumX += x * wgt; sumY += y * wgt; sumW += wgt;
+      const p = y * w + x;
+      const v = -4 * g[p] + g[p - 1] + g[p + 1] + g[p - w] + g[p + w];
+      lap.push(v); mean += v; n++;
     }
   }
-  const cx = sumW ? sumX / sumW / w : 0.5;
-  const cy = sumW ? sumY / sumW / h : 0.5;
-  return { cx, cy };
+  mean /= n;
+  let varr = 0;
+  for (const v of lap) varr += (v - mean) * (v - mean);
+  varr /= n;
+  // تحويل التباين إلى 0..100 بمقياس لوغاريتمي معقول
+  const score = Math.round(Math.min(100, Math.max(0, (Math.log10(varr + 1) / Math.log10(2500)) * 100)));
+  return score;
 }
 
-/* تقييم التكوين: قرب مركز الثقل من نقاط القوة + توازن التعريض */
-function scoreComposition(weight, mood, hist) {
-  const thirds = [
-    [1/3, 1/3], [2/3, 1/3], [1/3, 2/3], [2/3, 2/3],
-  ];
-  let minD = Infinity;
-  for (const [tx, ty] of thirds) {
-    const d = Math.hypot(weight.cx - tx, weight.cy - ty);
-    if (d < minD) minD = d;
+// بصمة المتوسط (aHash): 8×8 رمادي → 64 بت
+function computeAHash(img) {
+  aCanvas.width = 8; aCanvas.height = 8;
+  aCtx.drawImage(img, 0, 0, 8, 8);
+  const d = aCtx.getImageData(0, 0, 8, 8).data;
+  const gray = [];
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    gray.push(v); sum += v;
   }
-  // المسافة القصوى المعقولة ~0.4؛ كلما اقترب زادت الدرجة
-  const thirdsScore = clamp(1 - minD / 0.42, 0, 1);
+  const avg = sum / 64;
+  let bits = 0n;
+  for (let i = 0; i < 64; i++) bits = (bits << 1n) | (gray[i] >= avg ? 1n : 0n);
+  return bits;
+}
 
-  // عقوبة التموسط المفرط (إلا إن كان متوازناً تماماً وهو أسلوب أيضاً)
-  const centerD = Math.hypot(weight.cx - 0.5, weight.cy - 0.5);
-  const centerBonus = centerD < 0.06 ? 0.15 : 0; // تكوين متماثل مقصود
+function hamming(a, b) {
+  let x = a ^ b, c = 0;
+  while (x) { c += Number(x & 1n); x >>= 1n; }
+  return c;
+}
 
-  // توازن التعريض: نعاقب القص الشديد في الظلال/الإضاءات
-  const clip = hist.shadows > 0.35 ? (hist.shadows - 0.35) : 0;
-  const clipH = hist.highlights > 0.3 ? (hist.highlights - 0.3) : 0;
-  const exposureScore = clamp(1 - (clip + clipH) * 1.6, 0.2, 1);
+// معالجة الطابور بالتتابع حتى لا نُجهد المتصفح
+async function runAnalysisQueue() {
+  if (analyzing) return;
+  analyzing = true;
+  while (analyzeQueue.length) {
+    const item = analyzeQueue.shift();
+    item.thumbEl?.classList.add('busy');
+    await analyzeItem(item);
+    item.thumbEl?.classList.remove('busy');
+    refreshThumb(item);
+    if (items[active] === item) showActive();
+  }
+  analyzing = false;
+  groupBursts();
+  buildFilmstrip();
+  updateStats();
+  toast('اكتمل التحليل: تم كشف الحدّة وتجميع اللقطات ✓');
+}
 
-  // مكافأة التباين الجيد (ليس مسطحاً ولا مفرطاً)
-  const contrastScore = 1 - Math.abs(mood.contrast - 0.5) * 1.2;
+// تجميع اللقطات المتسلسلة المتشابهة عبر تقارب البصمة
+function groupBursts() {
+  const THRESH = 8; // مسافة هامِنغ القصوى لاعتبار صورتين متشابهتين
+  let gid = 0;
+  for (const it of items) it.group = null;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].group !== null || items[i].hash == null) continue;
+    const members = [items[i]];
+    for (let j = i + 1; j < items.length; j++) {
+      if (items[j].group !== null || items[j].hash == null) continue;
+      if (hamming(items[i].hash, items[j].hash) <= THRESH) members.push(items[j]);
+    }
+    if (members.length > 1) {
+      gid++;
+      members.forEach((m) => (m.group = gid));
+    }
+  }
+}
 
-  const raw = thirdsScore * 0.5 + exposureScore * 0.28 + clamp(contrastScore,0,1) * 0.22 + centerBonus;
-  const score = Math.round(clamp(raw, 0, 1) * 100);
+/* ---------------------- العرض ---------------------- */
+function showActive() {
+  const it = items[active];
+  if (!it) return;
+  el.mainImg.src = it.url;
+  el.mainImg.classList.remove('zoomed');
 
-  // النصائح
-  const tips = [];
-  if (thirdsScore < 0.55 && centerD > 0.1) {
-    tips.push('حرّك الموضوع نحو إحدى نقاط القوة (تقاطعات الأثلاث) لتكوين أكثر جذباً.');
+  // مؤشّر الحدّة
+  if (it.sharp == null) {
+    el.sharpFill.style.width = '0%'; el.sharpVal.textContent = '…';
   } else {
-    tips.push('مركز الثقل قريب من نقطة قوة — تكوين متوازن وجذّاب.');
+    el.sharpFill.style.width = it.sharp + '%';
+    el.sharpVal.textContent = it.sharp;
   }
-  if (hist.shadows > 0.4) tips.push('الظلال مقصوصة قليلاً — ارفع التعريض أو افتح الظلال لاستعادة التفاصيل.');
-  if (hist.highlights > 0.32) tips.push('إضاءات عالية محروقة — قلّل التعريض أو استرجع الإبرازات.');
-  if (mood.contrast < 0.28) tips.push('الصورة مسطّحة قليلاً — زيادة التباين تمنحها عمقاً.');
-  if (mood.contrast > 0.72) tips.push('التباين عالٍ جداً — قد تفقد تفاصيل في الأطراف.');
-  if (mood.sat < 0.15) tips.push('ألوان باهتة — لمسة تشبّع قد تحييها (أو أبقها مونوكروم بقصد فني).');
-  if (tips.length < 2) tips.push('تعريض وتباين متوازنان — أساس قوي للمعالجة.');
 
-  let label;
-  if (score >= 85) label = 'تكوين استثنائي 🏆';
-  else if (score >= 70) label = 'تكوين قوي 👌';
-  else if (score >= 55) label = 'تكوين جيد — قابل للتحسين';
-  else label = 'فرصة للتطوير 💪';
+  // شارات الحالة
+  el.badgeOverlay.innerHTML = '';
+  const add = (cls, txt) => {
+    const s = document.createElement('span'); s.className = 'ov-badge ' + cls; s.textContent = txt;
+    el.badgeOverlay.appendChild(s);
+  };
+  if (it.flag === 'pick') add('ov-pick', '✓ مقبولة');
+  if (it.flag === 'reject') add('ov-reject', '✕ مرفوضة');
+  if (it.rating) add('ov-star', '★'.repeat(it.rating));
+  if (it.sharp != null && it.sharp < 35) add('ov-soft', '⚠︎ قد تكون غير واضحة');
+  if (it.group) {
+    const g = items.filter((x) => x.group === it.group);
+    const best = g.reduce((a, b) => (b.sharp > a.sharp ? b : a), g[0]);
+    add('ov-group', `🔗 لقطة ${g.indexOf(it) + 1}/${g.length}` + (best === it ? ' · الأوضح' : ''));
+  }
 
-  return { score, label, tips: tips.slice(0, 4), thirdsScore };
+  // النجوم
+  $$('#stars button').forEach((b) => b.classList.toggle('lit', +b.dataset.star <= it.rating));
+  el.btnPick.classList.toggle('on', it.flag === 'pick');
+  el.btnReject.classList.toggle('on', it.flag === 'reject');
+
+  // إبراز المصغّرة النشطة
+  $$('.thumb').forEach((t) => t.classList.toggle('active', t.dataset.id === it.id));
+  it.thumbEl?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 }
 
-/* ---------------------- الرسم ---------------------- */
-function render() {
-  const { W, H } = state.analysis;
-  ctx.clearRect(0, 0, W, H);
-  ctx.drawImage(state.img, 0, 0, W, H);
-  drawOverlays(ctx, W, H);
+function buildFilmstrip() {
+  el.filmstrip.innerHTML = '';
+  const list = visibleItems();
+  let lastGroup = null;
+  for (const it of list) {
+    const t = document.createElement('div');
+    t.className = 'thumb';
+    t.dataset.id = it.id;
+    if (it.group && it.group !== lastGroup) t.classList.add('group-start');
+    lastGroup = it.group;
+    t.innerHTML = `<img src="${it.url}" loading="lazy" alt="">`;
+    it.thumbEl = t;
+    t.addEventListener('click', () => { active = items.indexOf(it); showActive(); });
+    el.filmstrip.appendChild(t);
+    refreshThumb(it);
+  }
+  // حافظ على إبراز النشط
+  showActive();
 }
 
-function drawOverlays(c, W, H) {
-  const o = state.overlays;
-  c.save();
-  c.lineWidth = Math.max(1, W / 600);
+function refreshThumb(it) {
+  const t = it.thumbEl; if (!t) return;
+  t.classList.toggle('is-reject', it.flag === 'reject');
+  // أزل الشارات القديمة (عدا الصورة)
+  [...t.querySelectorAll('.tb,.gsep')].forEach((n) => n.remove());
+  const mk = (cls, txt) => { const s = document.createElement('span'); s.className = 'tb ' + cls; s.textContent = txt; t.appendChild(s); };
+  if (it.flag === 'pick') mk('pick', '✓');
+  if (it.flag === 'reject') mk('reject', '✕');
+  if (it.rating) mk('stars', '★' + it.rating);
+  if (it.sharp != null && it.sharp < 35) mk('soft', '⚠︎');
+  if (it.group) {
+    const g = items.filter((x) => x.group === it.group);
+    const s = document.createElement('span'); s.className = 'gsep';
+    s.textContent = '🔗' + g.length; t.appendChild(s);
+  }
+}
 
-  if (o.thirds) {
-    c.strokeStyle = 'rgba(255,255,255,.45)';
-    for (let i = 1; i < 3; i++) {
-      c.beginPath(); c.moveTo((W*i)/3, 0); c.lineTo((W*i)/3, H); c.stroke();
-      c.beginPath(); c.moveTo(0, (H*i)/3); c.lineTo(W, (H*i)/3); c.stroke();
+/* ---------------------- الفلترة ---------------------- */
+function visibleItems() {
+  switch (filter) {
+    case 'unrated': return items.filter((i) => !i.flag && !i.rating);
+    case 'pick': return items.filter((i) => i.flag === 'pick');
+    case 'reject': return items.filter((i) => i.flag === 'reject');
+    case 'stars': return items.filter((i) => i.rating >= 3);
+    case 'soft': return items.filter((i) => i.sharp != null && i.sharp < 35);
+    default: return items;
+  }
+}
+
+/* ---------------------- الإجراءات ---------------------- */
+function setFlag(flag) {
+  const it = items[active]; if (!it) return;
+  it.flag = it.flag === flag ? null : flag;
+  refreshThumb(it); showActive(); updateStats();
+  if (it.flag) nextImage();
+}
+function setRating(n) {
+  const it = items[active]; if (!it) return;
+  it.rating = it.rating === n ? 0 : n;
+  refreshThumb(it); showActive(); updateStats();
+}
+function nextImage() {
+  const list = visibleItems();
+  if (!list.length) return;
+  let idx = list.indexOf(items[active]);
+  idx = Math.min(idx + 1, list.length - 1);
+  active = items.indexOf(list[idx]); showActive();
+}
+function prevImage() {
+  const list = visibleItems();
+  if (!list.length) return;
+  let idx = list.indexOf(items[active]);
+  idx = Math.max(idx - 1, 0);
+  active = items.indexOf(list[idx]); showActive();
+}
+function jumpToBestInGroup() {
+  const it = items[active]; if (!it || !it.group) { toast('هذه الصورة ليست ضمن مجموعة لقطات'); return; }
+  const g = items.filter((x) => x.group === it.group);
+  const best = g.reduce((a, b) => (b.sharp > a.sharp ? b : a), g[0]);
+  active = items.indexOf(best); showActive();
+  toast('انتقلت إلى الأوضح في المجموعة');
+}
+function toggleZoom() {
+  el.mainImg.classList.toggle('zoomed');
+}
+
+function updateStats() {
+  const picks = items.filter((i) => i.flag === 'pick').length;
+  const rej = items.filter((i) => i.flag === 'reject').length;
+  const soft = items.filter((i) => i.sharp != null && i.sharp < 35).length;
+  const groups = new Set(items.filter((i) => i.group).map((i) => i.group)).size;
+  el.stats.innerHTML =
+    `<span>الإجمالي <b>${items.length}</b></span>` +
+    `<span class="pick-c">مقبولة <b>${picks}</b></span>` +
+    `<span class="rej-c">مرفوضة <b>${rej}</b></span>` +
+    `<span>غير واضحة <b>${soft}</b></span>` +
+    `<span>مجموعات <b>${groups}</b></span>`;
+}
+
+/* ---------------------- التصدير ---------------------- */
+function exportPicks() {
+  const picks = items.filter((i) => i.flag === 'pick' || i.rating >= 3);
+  if (!picks.length) { toast('لا توجد صور مختارة بعد (قبول أو ★3+)'); return; }
+  const lines = [
+    '# قائمة المختارات — نُخبة (Nukhba)',
+    `# التاريخ: ${new Date().toLocaleString('ar')}`,
+    `# العدد: ${picks.length} من ${items.length}`,
+    '# الصق هذه الأسماء في فلتر النص بـ Lightroom / Capture One',
+    '',
+    ...picks.map((p) => p.name),
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nukhba-selects.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`تم تصدير ${picks.length} صورة مختارة 🎉`);
+}
+
+/* ---------------------- صور تجريبية مولّدة ---------------------- */
+function makeDemo() {
+  const palette = [['#2b1055', '#ff7e5f'], ['#0f2027', '#7ee8fa'], ['#3a1c71', '#feb47b'], ['#134e5e', '#71b280'], ['#42275a', '#734b6d']];
+  const files = [];
+  let made = 0;
+  // ننشئ 5 "مشاهد"، كل مشهد دفعة من 3 لقطات متقاربة (مع اختلاف حدّة)
+  for (let scene = 0; scene < 5; scene++) {
+    for (let shot = 0; shot < 3; shot++) {
+      const c = document.createElement('canvas'); c.width = 800; c.height = 600;
+      const g = c.getContext('2d');
+      const [a, b] = palette[scene];
+      const grad = g.createLinearGradient(0, 0, 800, 600);
+      grad.addColorStop(0, a); grad.addColorStop(1, b);
+      g.fillStyle = grad; g.fillRect(0, 0, 800, 600);
+      // موضوع: دائرة عند نقطة قوة، تتزحزح قليلاً بين اللقطات (يحاكي اللقطة المتسلسلة)
+      const x = 800 * (2 / 3) + shot * 6, y = 600 * (1 / 3) + shot * 4;
+      g.fillStyle = 'rgba(255,255,255,.92)';
+      g.beginPath(); g.arc(x, y, 70, 0, 7); g.fill();
+      g.fillStyle = a;
+      g.font = 'bold 40px sans-serif'; g.textAlign = 'center';
+      g.fillText('Scene ' + (scene + 1), 400, 540);
+      // محاكاة عدم الوضوح في اللقطة الوسطى لكل مشهد
+      let canvas = c;
+      if (shot === 1) {
+        const blurC = document.createElement('canvas'); blurC.width = 800; blurC.height = 600;
+        const bg = blurC.getContext('2d');
+        bg.filter = 'blur(6px)'; bg.drawImage(c, 0, 0); canvas = blurC;
+      }
+      canvas.toBlob((blob) => {
+        const f = new File([blob], `scene${scene + 1}_shot${shot + 1}.jpg`, { type: 'image/jpeg' });
+        files.push(f); made++;
+        if (made === 15) addFiles(files);
+      }, 'image/jpeg', 0.9);
     }
-    // نقاط القوة
-    c.fillStyle = 'rgba(254,180,123,.9)';
-    for (const px of [1/3, 2/3]) for (const py of [1/3, 2/3]) {
-      c.beginPath(); c.arc(W*px, H*py, Math.max(3, W/180), 0, 7); c.fill();
-    }
   }
-
-  if (o.diagonals) {
-    c.strokeStyle = 'rgba(126,232,250,.45)';
-    c.beginPath(); c.moveTo(0,0); c.lineTo(W,H); c.stroke();
-    c.beginPath(); c.moveTo(W,0); c.lineTo(0,H); c.stroke();
-  }
-
-  if (o.golden) {
-    drawGoldenSpiral(c, W, H);
-  }
-
-  if (o.weight && state.analysis.weight) {
-    const { cx, cy } = state.analysis.weight;
-    const x = cx * W, y = cy * H;
-    const r = Math.max(10, W / 28);
-    c.strokeStyle = '#ff7e5f';
-    c.fillStyle = 'rgba(255,126,95,.18)';
-    c.lineWidth = Math.max(2, W/350);
-    c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.stroke();
-    c.beginPath(); c.moveTo(x-r*1.4, y); c.lineTo(x+r*1.4, y); c.moveTo(x, y-r*1.4); c.lineTo(x, y+r*1.4); c.stroke();
-  }
-  c.restore();
-}
-
-function drawGoldenSpiral(c, W, H) {
-  c.strokeStyle = 'rgba(255,209,102,.55)';
-  c.lineWidth = Math.max(1.2, W/500);
-  // حلزون فيبوناتشي تقريبي عبر أرباع دائرة متناقصة
-  let x = 0, y = 0, w = W, h = H;
-  // اتجاه افتراضي
-  const steps = 8;
-  c.beginPath();
-  let cx, cy, r, start;
-  for (let i = 0; i < steps; i++) {
-    const phi = 0.618;
-    if (i % 4 === 0) { r = w * phi; cx = x + w - r; cy = y; start = Math.PI; c.arc(cx, cy + r, r, Math.PI, Math.PI*1.5); x = x + w - r; w = r; }
-    else if (i % 4 === 1) { r = h * phi; cx = x; cy = y + h - r; c.arc(cx, cy + r, r, Math.PI*1.5, Math.PI*2); y = y + h - r; h = r; }
-    else if (i % 4 === 2) { r = w * phi; c.arc(x + r, y, r, 0, Math.PI*0.5); w = r; }
-    else { r = h * phi; c.arc(x, y + r, r, Math.PI*0.5, Math.PI); h = r; }
-  }
-  c.stroke();
-}
-
-/* ---------------------- عرض النتائج ---------------------- */
-function renderResults(a) {
-  // الدرجة + الحلقة
-  const C = 2 * Math.PI * 52;
-  els.ringFg.style.strokeDasharray = C;
-  els.scoreVal.textContent = a.composition.score;
-  els.scoreLabel.textContent = a.composition.label;
-  requestAnimationFrame(() => {
-    els.ringFg.style.strokeDashoffset = C * (1 - a.composition.score / 100);
-    const hue = 10 + (a.composition.score / 100) * 120; // أحمر→أخضر
-    els.ringFg.style.stroke = `hsl(${hue} 80% 62%)`;
-  });
-
-  els.tips.innerHTML = '';
-  a.composition.tips.forEach((t) => {
-    const li = document.createElement('li'); li.textContent = t; els.tips.appendChild(li);
-  });
-
-  // المزاج
-  els.moodBadge.textContent = a.mood.label;
-  els.barWarm.style.width = (a.mood.warmth * 100) + '%';
-  els.barSat.style.width = (a.mood.sat * 100) + '%';
-  els.barContrast.style.width = (a.mood.contrast * 100) + '%';
-
-  // الألوان
-  els.palette.innerHTML = '';
-  a.palette.forEach((col) => {
-    const sw = document.createElement('div');
-    sw.className = 'swatch';
-    sw.style.background = col.hex;
-    sw.innerHTML = `<span>${col.hex}</span>`;
-    sw.title = 'انقر لنسخ ' + col.hex;
-    sw.addEventListener('click', () => {
-      navigator.clipboard?.writeText(col.hex).then(() => toast('نُسخ ' + col.hex)).catch(() => toast(col.hex));
-    });
-    els.palette.appendChild(sw);
-  });
-
-  // الهيستوجرام
-  drawHistogram(a.histogram);
-  let note = 'توزيع إضاءة متوازن.';
-  if (a.histogram.shadows > 0.4) note = 'تركّز في الظلال — صورة منخفضة المفتاح (low-key).';
-  else if (a.histogram.highlights > 0.32) note = 'تركّز في الإضاءات — صورة عالية المفتاح (high-key).';
-  else if (a.mood.contrast < 0.28) note = 'مدى ضيّق — قد تستفيد من توسيع التباين.';
-  els.exposureNote.textContent = note;
-}
-
-function drawHistogram(hist) {
-  const w = els.hist.width = els.hist.clientWidth * devicePixelRatio;
-  const h = els.hist.height = 90 * devicePixelRatio;
-  histCtx.clearRect(0, 0, w, h);
-  const bw = w / hist.bins.length;
-  const grad = histCtx.createLinearGradient(0, 0, w, 0);
-  grad.addColorStop(0, '#1c2030');
-  grad.addColorStop(0.5, '#7ee8fa');
-  grad.addColorStop(1, '#feb47b');
-  histCtx.fillStyle = grad;
-  hist.bins.forEach((v, i) => {
-    const bh = (v / hist.max) * (h - 4);
-    histCtx.fillRect(i * bw, h - bh, bw - 1, bh);
-  });
-}
-
-/* ---------------------- بطاقة التحليل القابلة للتنزيل ---------------------- */
-function downloadCard() {
-  if (!state.analysis) return;
-  const a = state.analysis;
-  const cw = 1080, ch = 1350;
-  const cv = document.createElement('canvas');
-  cv.width = cw; cv.height = ch;
-  const g = cv.getContext('2d');
-
-  // خلفية
-  g.fillStyle = '#0a0b10'; g.fillRect(0, 0, cw, ch);
-  const bg = g.createLinearGradient(0, 0, cw, ch);
-  bg.addColorStop(0, '#161a2b'); bg.addColorStop(1, '#0a0b10');
-  g.fillStyle = bg; g.fillRect(0, 0, cw, ch);
-
-  // الصورة
-  const pad = 70, imgW = cw - pad * 2;
-  const ratio = state.img.naturalHeight / state.img.naturalWidth;
-  const imgH = Math.min(imgW * ratio, 620);
-  const drawW = imgH / ratio;
-  const ix = (cw - drawW) / 2;
-  g.save();
-  roundRect(g, ix, pad + 90, drawW, imgH, 24); g.clip();
-  g.drawImage(state.img, ix, pad + 90, drawW, imgH);
-  g.restore();
-
-  // العنوان
-  g.textAlign = 'right'; g.direction = 'rtl';
-  g.fillStyle = '#feb47b'; g.font = '900 56px Tajawal, sans-serif';
-  g.fillText('طيف', cw - pad, pad + 50);
-  g.fillStyle = '#9aa0b4'; g.font = '400 26px Tajawal, sans-serif';
-  g.fillText('تحليل التكوين والضوء واللون', cw - pad - 130, pad + 50);
-
-  let y = pad + 90 + imgH + 80;
-
-  // الدرجة
-  g.textAlign = 'left';
-  g.fillStyle = '#fff'; g.font = '900 90px "Space Grotesk", sans-serif';
-  g.fillText(a.composition.score, pad, y);
-  g.fillStyle = '#9aa0b4'; g.font = '400 30px Tajawal'; g.fillText('/100', pad + 150, y);
-  g.textAlign = 'right'; g.fillStyle = '#feb47b'; g.font = '700 36px Tajawal';
-  g.fillText(a.composition.label, cw - pad, y - 30);
-  g.fillStyle = '#9aa0b4'; g.font = '400 26px Tajawal';
-  g.fillText(a.mood.label + ' · درجة التكوين', cw - pad, y + 14);
-
-  y += 70;
-  // لوحة الألوان
-  const sw = (cw - pad * 2 - 5 * 16) / 6;
-  a.palette.forEach((col, i) => {
-    g.fillStyle = col.hex;
-    roundRect(g, pad + i * (sw + 16), y, sw, 90, 14); g.fill();
-  });
-  y += 130;
-
-  // الهيستوجرام
-  g.fillStyle = 'rgba(255,255,255,.05)';
-  roundRect(g, pad, y, cw - pad*2, 120, 16); g.fill();
-  const hw = (cw - pad*2) / a.histogram.bins.length;
-  const hg = g.createLinearGradient(pad, 0, cw-pad, 0);
-  hg.addColorStop(0, '#7ee8fa'); hg.addColorStop(1, '#feb47b');
-  g.fillStyle = hg;
-  a.histogram.bins.forEach((v, i) => {
-    const bh = (v / a.histogram.max) * 110;
-    g.fillRect(pad + i*hw, y + 115 - bh, hw - 1, bh);
-  });
-
-  // التذييل
-  g.textAlign = 'center'; g.fillStyle = '#9aa0b4'; g.font = '400 24px Tajawal';
-  g.fillText('TAYF · طيف — حُلِّلت داخل المتصفح بخصوصية كاملة', cw/2, ch - 50);
-
-  const link = document.createElement('a');
-  link.download = 'tayf-analysis.png';
-  link.href = cv.toDataURL('image/png');
-  link.click();
-  toast('تم تنزيل بطاقة التحليل 🎉');
-}
-
-function roundRect(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
-}
-
-/* ---------------------- صورة تجريبية (متدرّج فني مولّد) ---------------------- */
-function generateSample() {
-  const c = document.createElement('canvas');
-  c.width = 1200; c.height = 800;
-  const g = c.getContext('2d');
-  // سماء غروب متدرّجة
-  const sky = g.createLinearGradient(0, 0, 0, 800);
-  sky.addColorStop(0, '#2b1055'); sky.addColorStop(0.5, '#7e3f8f');
-  sky.addColorStop(0.75, '#ff7e5f'); sky.addColorStop(1, '#feb47b');
-  g.fillStyle = sky; g.fillRect(0, 0, 1200, 800);
-  // الشمس عند نقطة قوة (ثلث)
-  const sx = 1200 * (2/3), sy = 800 * (1/3);
-  const sun = g.createRadialGradient(sx, sy, 0, sx, sy, 140);
-  sun.addColorStop(0, '#fff6e0'); sun.addColorStop(0.4, '#ffd27e'); sun.addColorStop(1, 'rgba(255,180,120,0)');
-  g.fillStyle = sun; g.beginPath(); g.arc(sx, sy, 140, 0, 7); g.fill();
-  // تلال ظلية
-  g.fillStyle = '#1a0f2e';
-  g.beginPath(); g.moveTo(0, 620);
-  g.bezierCurveTo(300, 540, 600, 660, 1200, 560); g.lineTo(1200, 800); g.lineTo(0, 800); g.fill();
-  g.fillStyle = '#0e0820';
-  g.beginPath(); g.moveTo(0, 700);
-  g.bezierCurveTo(400, 650, 800, 740, 1200, 680); g.lineTo(1200, 800); g.lineTo(0, 800); g.fill();
-  // طائر صغير
-  g.strokeStyle = '#1a0f2e'; g.lineWidth = 4;
-  g.beginPath(); g.moveTo(360, 200); g.quadraticCurveTo(385, 185, 410, 200);
-  g.quadraticCurveTo(435, 185, 460, 200); g.stroke();
-  loadImage(c.toDataURL('image/png'));
 }
 
 /* ---------------------- ربط الأحداث ---------------------- */
-['fileInput', 'fileInput2'].forEach((id) => {
-  els[id].addEventListener('change', (e) => handleFile(e.target.files[0]));
-});
-els.sampleBtn.addEventListener('click', generateSample);
-els.downloadCard.addEventListener('click', downloadCard);
+el.filesInput.addEventListener('change', (e) => addFiles(e.target.files));
+el.folderInput.addEventListener('change', (e) => addFiles(e.target.files));
+el.addInput.addEventListener('change', (e) => addFiles(e.target.files));
+el.demoBtn.addEventListener('click', makeDemo);
 
-// السحب والإفلات
-['dragenter', 'dragover'].forEach((ev) =>
-  els.dropzone.addEventListener(ev, (e) => { e.preventDefault(); els.dropzone.classList.add('drag'); }));
-['dragleave', 'drop'].forEach((ev) =>
-  els.dropzone.addEventListener(ev, (e) => { e.preventDefault(); els.dropzone.classList.remove('drag'); }));
-els.dropzone.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
-window.addEventListener('dragover', (e) => e.preventDefault());
-window.addEventListener('drop', (e) => e.preventDefault());
+el.btnPick.addEventListener('click', () => setFlag('pick'));
+el.btnReject.addEventListener('click', () => setFlag('reject'));
+el.btnZoom.addEventListener('click', toggleZoom);
+el.mainImg.addEventListener('click', toggleZoom);
+el.navNext.addEventListener('click', nextImage);
+el.navPrev.addEventListener('click', prevImage);
+el.exportBtn.addEventListener('click', exportPicks);
 
-// أزرار الطبقات
-document.querySelectorAll('.chip[data-overlay]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const key = btn.dataset.overlay;
-    state.overlays[key] = !state.overlays[key];
-    btn.setAttribute('aria-pressed', String(state.overlays[key]));
-    if (state.analysis) render();
-  });
+$$('#stars button').forEach((b) => b.addEventListener('click', () => setRating(+b.dataset.star)));
+
+el.filters.addEventListener('click', (e) => {
+  const btn = e.target.closest('.fchip'); if (!btn) return;
+  filter = btn.dataset.filter;
+  $$('.fchip').forEach((c) => c.classList.toggle('active', c === btn));
+  buildFilmstrip();
+  // اضبط النشط على أول عنصر مرئي إن خرج عن الفلتر
+  const list = visibleItems();
+  if (list.length && !list.includes(items[active])) { active = items.indexOf(list[0]); showActive(); }
 });
 
-// إعادة رسم الهيستوجرام عند تغيير الحجم
-let rt;
-window.addEventListener('resize', () => {
-  clearTimeout(rt);
-  rt = setTimeout(() => { if (state.analysis) drawHistogram(state.analysis.histogram); }, 150);
+el.helpBtn.addEventListener('click', () => el.helpModal.classList.remove('hidden'));
+el.closeHelp.addEventListener('click', () => el.helpModal.classList.add('hidden'));
+el.helpModal.addEventListener('click', (e) => { if (e.target === el.helpModal) el.helpModal.classList.add('hidden'); });
+
+// لوحة المفاتيح
+document.addEventListener('keydown', (e) => {
+  if (el.app.classList.contains('hidden')) return;
+  if (e.target.tagName === 'INPUT') return;
+  switch (e.key) {
+    case 'ArrowRight': prevImage(); break;   // RTL: اليمين = السابق بصرياً
+    case 'ArrowLeft': nextImage(); break;
+    case 'p': case 'P': setFlag('pick'); break;
+    case 'x': case 'X': setFlag('reject'); break;
+    case 'z': case 'Z': case ' ': e.preventDefault(); toggleZoom(); break;
+    case 'g': case 'G': jumpToBestInGroup(); break;
+    case '0': setRating(0); break;
+    default:
+      if (e.key >= '1' && e.key <= '5') setRating(+e.key);
+  }
 });
+
+// السحب والإفلات على كامل النافذة
+['dragover', 'drop'].forEach((ev) => window.addEventListener(ev, (e) => e.preventDefault()));
+window.addEventListener('drop', (e) => { if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
