@@ -77,7 +77,13 @@
       </div>
       <div class="appbar-r">
         <button class="btn small ghost" id="helpBtn" title="اختصارات لوحة المفاتيح">⌨︎ اختصارات</button>
-        <button class="btn small primary" id="exportBtn">📤 تصدير المختارات</button>
+        <div class="export-wrap">
+          <button class="btn small primary" id="exportBtn">📤 تصدير المختارات ▾</button>
+          <div class="export-menu hidden" id="exportMenu">
+            <button data-export="txt">📝 قائمة أسماء (.txt)<small>للّصق في فلتر Lightroom / Capture One</small></button>
+            <button data-export="xmp">🏷️ ملفات XMP بالتقييمات (.zip)<small>تقييم + قبول/رفض تقرأها Lightroom مباشرة</small></button>
+          </div>
+        </div>
         <label class="btn small ghost">+ صور<input type="file" id="addInput" accept="image/*" multiple hidden /></label>
       </div>
     </header>
@@ -105,11 +111,24 @@
       </div>
       <button class="judge-btn pick" id="btnPick" title="قبول (P)">✓ قبول</button>
       <button class="judge-btn zoom" id="btnZoom" title="تكبير 100% (Z)">🔍 100%</button>
+      <button class="judge-btn compare" id="btnCompare" title="مقارنة المجموعة (C)">⬓ قارن</button>
     </div>
 
     <!-- شريط المصغّرات -->
     <div class="filmstrip" id="filmstrip"></div>
   </section>
+
+  <!-- ====================== وضع المقارنة ====================== -->
+  <div id="compareModal" class="modal hidden compare-modal">
+    <div class="compare-box">
+      <div class="compare-head">
+        <h3 id="compareTitle">مقارنة اللقطات</h3>
+        <p>اختر الفائزة — سيُقبَل اختيارك وتُرفَض البقية في المجموعة. <kbd>Esc</kbd> للإغلاق</p>
+        <button class="btn small ghost" id="closeCompare">✕ إغلاق</button>
+      </div>
+      <div class="compare-grid" id="compareGrid"></div>
+    </div>
+  </div>
 
   <!-- نافذة الاختصارات -->
   <div id="helpModal" class="modal hidden">
@@ -123,6 +142,7 @@
         <li><kbd>0</kbd> إزالة التقييم</li>
         <li><kbd>Z</kbd> أو <kbd>مسافة</kbd> تكبير 100% لفحص التركيز</li>
         <li><kbd>G</kbd> القفز لأفضل صورة في المجموعة الحالية</li>
+        <li><kbd>C</kbd> مقارنة لقطات المجموعة جنباً إلى جنب</li>
       </ul>
       <button class="btn primary" id="closeHelp">فهمت</button>
     </div>

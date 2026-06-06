@@ -18,8 +18,10 @@ const el = {
   filmstrip: $('#filmstrip'), stars: $('#stars'),
   btnPick: $('#btnPick'), btnReject: $('#btnReject'), btnZoom: $('#btnZoom'),
   navPrev: $('#navPrev'), navNext: $('#navNext'),
-  exportBtn: $('#exportBtn'), helpBtn: $('#helpBtn'),
+  exportBtn: $('#exportBtn'), exportMenu: $('#exportMenu'), helpBtn: $('#helpBtn'),
   helpModal: $('#helpModal'), closeHelp: $('#closeHelp'),
+  btnCompare: $('#btnCompare'), compareModal: $('#compareModal'),
+  compareGrid: $('#compareGrid'), compareTitle: $('#compareTitle'), closeCompare: $('#closeCompare'),
   toast: $('#toast'),
 };
 
@@ -315,6 +317,152 @@ function updateStats() {
     `<span>مجموعات <b>${groups}</b></span>`;
 }
 
+/* ---------------------- وضع المقارنة ---------------------- */
+function openCompare() {
+  const it = items[active]; if (!it) return;
+  let group;
+  if (it.group) {
+    group = items.filter((x) => x.group === it.group);
+    el.compareTitle.textContent = `مقارنة المجموعة (${group.length} لقطات)`;
+  } else {
+    // لا توجد مجموعة: قارن الصورة الحالية مع جيرانها (حتى 4)
+    const start = Math.max(0, active - 1);
+    group = items.slice(start, start + 4);
+    el.compareTitle.textContent = `مقارنة ${group.length} صور متجاورة`;
+  }
+  if (group.length < 2) { toast('لا توجد صور كافية للمقارنة'); return; }
+
+  const best = group.reduce((a, b) => ((b.sharp || 0) > (a.sharp || 0) ? b : a), group[0]);
+  el.compareGrid.innerHTML = '';
+  for (const g of group) {
+    const isBest = g === best;
+    const cell = document.createElement('div');
+    cell.className = 'cmp-cell' + (isBest ? ' best' : '');
+    cell.innerHTML = `
+      <div class="cmp-imgwrap">
+        <img src="${g.url}" alt="">
+        <span class="cmp-tag${isBest ? ' best' : ''}">${isBest ? '★ الأوضح' : 'حدّة ' + (g.sharp ?? '…')}</span>
+      </div>
+      <div class="cmp-meta">
+        <span class="cmp-name">${g.name}</span>
+        <div class="cmp-sharp"><span>الحدّة</span><div class="sharp-track"><i style="width:${g.sharp || 0}%"></i></div><b>${g.sharp ?? '…'}</b></div>
+        <button class="cmp-pick">✓ اختر هذه</button>
+      </div>`;
+    cell.querySelector('.cmp-pick').addEventListener('click', () => chooseWinner(g, group));
+    el.compareGrid.appendChild(cell);
+  }
+  el.compareModal.classList.remove('hidden');
+}
+
+function chooseWinner(winner, group) {
+  for (const g of group) {
+    g.flag = g === winner ? 'pick' : 'reject';
+    refreshThumb(g);
+  }
+  active = items.indexOf(winner);
+  el.compareModal.classList.add('hidden');
+  showActive(); updateStats();
+  toast(`اخترت ${winner.name} ورفضت ${group.length - 1} لقطة`);
+}
+
+/* ---------------------- مولّد ZIP (بدون مكتبات · طريقة Store) ---------------------- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name);
+    const data = typeof f.data === 'string' ? enc.encode(f.data) : f.data;
+    const crc = crc32(data);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);          // version
+    local.setUint16(6, 0, true);           // flags
+    local.setUint16(8, 0, true);           // method = store
+    local.setUint16(10, 0, true);          // time
+    local.setUint16(12, 0x21, true);       // date
+    local.setUint32(14, crc, true);
+    local.setUint32(18, data.length, true);
+    local.setUint32(22, data.length, true);
+    local.setUint16(26, name.length, true);
+    local.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(local.buffer), name, data);
+    const localSize = 30 + name.length + data.length;
+
+    const cen = new DataView(new ArrayBuffer(46));
+    cen.setUint32(0, 0x02014b50, true);
+    cen.setUint16(4, 20, true); cen.setUint16(6, 20, true);
+    cen.setUint16(8, 0, true); cen.setUint16(10, 0, true);
+    cen.setUint16(12, 0, true); cen.setUint16(14, 0x21, true);
+    cen.setUint32(16, crc, true);
+    cen.setUint32(20, data.length, true);
+    cen.setUint32(24, data.length, true);
+    cen.setUint16(28, name.length, true);
+    cen.setUint32(42, offset, true);
+    central.push({ header: new Uint8Array(cen.buffer), name });
+    offset += localSize;
+  }
+  const cdStart = offset;
+  let cdSize = 0;
+  for (const c of central) { chunks.push(c.header, c.name); cdSize += 46 + c.name.length; }
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, central.length, true);
+  end.setUint16(10, central.length, true);
+  end.setUint32(12, cdSize, true);
+  end.setUint32(16, cdStart, true);
+  chunks.push(new Uint8Array(end.buffer));
+  return new Blob(chunks, { type: 'application/zip' });
+}
+
+/* بناء محتوى XMP يحمل التقييم والعلامة (تقرأه Lightroom / Bridge) */
+function buildXmp(item) {
+  const rating = item.flag === 'reject' ? 0 : (item.rating || 0);
+  let label = '';
+  if (item.flag === 'pick') label = '<xmp:Label>Select</xmp:Label>';
+  else if (item.flag === 'reject') label = '<xmp:Label>Reject</xmp:Label>';
+  return `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+   <xmp:Rating>${rating}</xmp:Rating>
+   ${label}
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+}
+
+function exportXmp() {
+  const judged = items.filter((i) => i.flag || i.rating);
+  if (!judged.length) { toast('لا توجد صور تم الحكم عليها بعد'); return; }
+  const files = judged.map((it) => ({
+    name: it.name.replace(/\.[^.]+$/, '') + '.xmp',
+    data: buildXmp(it),
+  }));
+  const blob = buildZip(files);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nukhba-xmp.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`تم تصدير ${files.length} ملف XMP داخل ZIP 🏷️`);
+}
+
 /* ---------------------- التصدير ---------------------- */
 function exportPicks() {
   const picks = items.filter((i) => i.flag === 'pick' || i.rating >= 3);
@@ -385,7 +533,19 @@ el.btnZoom.addEventListener('click', toggleZoom);
 el.mainImg.addEventListener('click', toggleZoom);
 el.navNext.addEventListener('click', nextImage);
 el.navPrev.addEventListener('click', prevImage);
-el.exportBtn.addEventListener('click', exportPicks);
+el.btnCompare.addEventListener('click', openCompare);
+el.closeCompare.addEventListener('click', () => el.compareModal.classList.add('hidden'));
+el.compareModal.addEventListener('click', (e) => { if (e.target === el.compareModal) el.compareModal.classList.add('hidden'); });
+
+// قائمة التصدير
+el.exportBtn.addEventListener('click', (e) => { e.stopPropagation(); el.exportMenu.classList.toggle('hidden'); });
+el.exportMenu.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-export]'); if (!btn) return;
+  el.exportMenu.classList.add('hidden');
+  if (btn.dataset.export === 'txt') exportPicks();
+  else exportXmp();
+});
+document.addEventListener('click', () => el.exportMenu.classList.add('hidden'));
 
 $$('#stars button').forEach((b) => b.addEventListener('click', () => setRating(+b.dataset.star)));
 
@@ -414,6 +574,8 @@ document.addEventListener('keydown', (e) => {
     case 'x': case 'X': setFlag('reject'); break;
     case 'z': case 'Z': case ' ': e.preventDefault(); toggleZoom(); break;
     case 'g': case 'G': jumpToBestInGroup(); break;
+    case 'c': case 'C': openCompare(); break;
+    case 'Escape': el.compareModal.classList.add('hidden'); el.helpModal.classList.add('hidden'); break;
     case '0': setRating(0); break;
     default:
       if (e.key >= '1' && e.key <= '5') setRating(+e.key);
