@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>الدرس — أكاديمية سهاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📸</text></svg>" />
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <main>
+    <div class="player-layout">
+      <div class="player-main" id="playerMain"></div>
+      <aside class="player-side" id="playerSide"></aside>
+    </div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    renderNav("courses");
+
+    const course = getCourse(qs("course")) || COURSES[0];
+    let mi = parseInt(qs("m") || "0", 10);
+    let li = parseInt(qs("l") || "0", 10);
+    const showQuiz = qs("quiz") === "1";
+
+    const user = Auth.current();
+    const mod = course.modules[mi] || course.modules[0];
+    const lesson = mod.lessons[li] || mod.lessons[0];
+    const enrolled = Enroll.isEnrolled(user, course.id);
+
+    // بوابة الوصول: الدرس متاح للمسجلين أو كمعاينة مجانية
+    if (!enrolled && !lesson.freePreview) {
+      location.href = user ? `course.html?id=${course.id}` : `login.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}`;
+    }
+
+    document.title = `${showQuiz && mod.quiz ? mod.quiz.title : lesson.title} — ${course.title}`;
+
+    /* ---- تسلسل الدروس للتنقل السابق/التالي ---- */
+    const flat = [];
+    course.modules.forEach((m, a) => {
+      m.lessons.forEach((_, b) => flat.push({ type: "lesson", mi: a, li: b }));
+      if (m.quiz) flat.push({ type: "quiz", mi: a });
+    });
+    const curIndex = flat.findIndex(x => showQuiz ? (x.type === "quiz" && x.mi === mi) : (x.type === "lesson" && x.mi === mi && x.li === li));
+    function urlFor(x) { return x.type === "quiz" ? `lesson.html?course=${course.id}&m=${x.mi}&quiz=1` : `lesson.html?course=${course.id}&m=${x.mi}&l=${x.li}`; }
+
+    /* ---- المحتوى الرئيسي ---- */
+    const main = document.getElementById("playerMain");
+
+    if (showQuiz && mod.quiz) {
+      renderQuiz();
+    } else {
+      renderLesson();
+    }
+
+    function navButtons() {
+      const prev = flat[curIndex - 1], next = flat[curIndex + 1];
+      return `<div class="lesson-nav">
+        ${prev ? `<a class="btn btn-ghost" href="${urlFor(prev)}">→ السابق</a>` : "<span></span>"}
+        ${next ? `<a class="btn btn-gold" href="${urlFor(next)}">التالي ←</a>` : `<a class="btn btn-green" href="dashboard.html">إنهاء الدورة 🎉</a>`}
+      </div>`;
+    }
+
+    function renderLesson() {
+      const done = user && Enroll.isLessonDone(user, course.id, mi, li);
+      const content = lesson.content || `في هذا الدرس من وحدة «${mod.title.replace(/^الوحدة [^:]+: /, "")}» نتناول موضوع «${lesson.title}» بشرح عملي مفصّل مدعوم بالأمثلة الميدانية والتطبيقات المباشرة. شاهد الفيديو كاملًا، وحمّل الملف المرافق، ثم طبّق التمرين قبل الانتقال للدرس التالي.`;
+      main.innerHTML = `
+        <div class="video-frame">
+          <button class="play-btn" title="تشغيل" onclick="UI.toast('🎬 في النسخة التجريبية، الفيديوهات غير مرفوعة بعد')">▶</button>
+          <span class="vf-label">🎬 ${lesson.dur} · جودة 4K</span>
+        </div>
+        <div class="lesson-content-box">
+          <h1>${lesson.title}</h1>
+          <div class="l-sub">${course.title} · ${mod.title} ${lesson.project ? '· <span class="tag project">مشروع عملي</span>' : ""}</div>
+          <div class="lesson-text"><p>${content}</p></div>
+          ${lesson.project ? `
+          <div class="lesson-text" style="margin-top:14px;border-color:rgba(52,201,142,0.4)">
+            <b style="color:var(--green)">🛠️ تسليم المشروع:</b>
+            <p style="margin-top:8px">ارفع صور مشروعك من لوحة التحكم، وسيراجعها المدرّب خلال 72 ساعة ويرسل لك تقييمًا مفصّلًا.</p>
+          </div>` : ""}
+          <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
+            ${enrolled ? `<button class="btn ${done ? "btn-ghost" : "btn-green"}" id="markDone">${done ? "✓ مكتمل — إلغاء التحديد" : "أكملت هذا الدرس ✓"}</button>` : `<a href="course.html?id=${course.id}" class="btn btn-gold">سجّل في الدورة للمتابعة</a>`}
+            <button class="btn btn-ghost" onclick="UI.toast('📄 الملف المرافق سيتوفر مع رفع المحتوى')">📄 تحميل ملف الدرس PDF</button>
+          </div>
+          ${navButtons()}
+        </div>`;
+
+      const btn = document.getElementById("markDone");
+      if (btn) btn.addEventListener("click", () => {
+        Enroll.markLesson(user, course.id, mi, li, !Enroll.isLessonDone(user, course.id, mi, li));
+        const cert = Enroll.maybeIssueCertificate(user, course);
+        if (cert) UI.toast("🏅 مبروك! حصلت على شهادة إتمام الدورة");
+        renderLesson(); renderSide();
+      });
+    }
+
+    function renderQuiz() {
+      const quiz = mod.quiz;
+      const prevScore = user ? Enroll.quizScore(user, course.id, mi) : null;
+      main.innerHTML = `
+        <div class="lesson-content-box" style="margin-top:0">
+          <h1>📝 ${quiz.title}</h1>
+          <div class="l-sub">${course.title} · ${mod.title} · ${quiz.questions.length} أسئلة — النجاح من 60%</div>
+          ${prevScore ? `<div class="quiz-result ${prevScore.score / prevScore.total >= 0.6 ? "pass" : "fail"}" style="margin-bottom:20px">نتيجتك السابقة: ${prevScore.score} من ${prevScore.total}</div>` : ""}
+          <div class="quiz-box" id="quizBox">
+            ${quiz.questions.map((q, qi) => `
+              <div class="quiz-q" data-qi="${qi}">
+                <h4>${qi + 1}. ${q.q}</h4>
+                ${q.options.map((o, oi) => `<div class="quiz-opt" data-oi="${oi}">${o}</div>`).join("")}
+              </div>`).join("")}
+            <button class="btn btn-gold btn-lg btn-block" id="submitQuiz">تسليم الإجابات</button>
+            <div id="quizResult"></div>
+          </div>
+          ${navButtons()}
+        </div>`;
+
+      const answers = {};
+      document.querySelectorAll(".quiz-q").forEach(qEl => {
+        qEl.querySelectorAll(".quiz-opt").forEach(opt => {
+          opt.addEventListener("click", () => {
+            if (qEl.dataset.locked) return;
+            qEl.querySelectorAll(".quiz-opt").forEach(o => o.classList.remove("selected"));
+            opt.classList.add("selected");
+            answers[qEl.dataset.qi] = parseInt(opt.dataset.oi, 10);
+          });
+        });
+      });
+
+      document.getElementById("submitQuiz").addEventListener("click", () => {
+        if (Object.keys(answers).length < quiz.questions.length) { UI.toast("⚠️ أجب على جميع الأسئلة أولًا"); return; }
+        let score = 0;
+        document.querySelectorAll(".quiz-q").forEach(qEl => {
+          const qi = parseInt(qEl.dataset.qi, 10);
+          qEl.dataset.locked = "1";
+          const correct = quiz.questions[qi].answer;
+          qEl.querySelectorAll(".quiz-opt").forEach((o, oi) => {
+            if (oi === correct) o.classList.add("correct");
+            else if (oi === answers[qi]) o.classList.add("wrong");
+          });
+          if (answers[qi] === correct) score++;
+        });
+        const pass = score / quiz.questions.length >= 0.6;
+        document.getElementById("quizResult").innerHTML =
+          `<div class="quiz-result ${pass ? "pass" : "fail"}">${pass ? "🎉 أحسنت! اجتزت الاختبار" : "😕 لم تجتز الاختبار — راجع الدروس وحاول مجددًا"} — نتيجتك ${score} من ${quiz.questions.length}</div>`;
+        document.getElementById("submitQuiz").disabled = true;
+        if (user && enrolled) {
+          Enroll.saveQuizScore(user, course.id, mi, score, quiz.questions.length);
+          const cert = Enroll.maybeIssueCertificate(user, course);
+          if (cert) UI.toast("🏅 مبروك! حصلت على شهادة إتمام الدورة");
+        }
+      });
+    }
+
+    /* ---- الشريط الجانبي: المنهج ---- */
+    function renderSide() {
+      const progress = user && enrolled ? Enroll.courseProgress(user, course) : 0;
+      document.getElementById("playerSide").innerHTML = `
+        <h3><a href="course.html?id=${course.id}" style="color:var(--gold-2)">${course.title}</a></h3>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="fill" style="width:${progress}%"></div></div>
+          <span>${progress}% مكتمل</span>
+        </div>
+        ${course.modules.map((m, a) => `
+          <div class="side-module">
+            <b>${m.title}</b>
+            ${m.lessons.map((l, b) => {
+              const done = user && Enroll.isLessonDone(user, course.id, a, b);
+              const current = !showQuiz && a === mi && b === li;
+              const locked = !enrolled && !l.freePreview;
+              return `<button class="side-lesson ${current ? "current" : ""} ${done ? "done" : ""}" data-url="${locked ? "" : `lesson.html?course=${course.id}&m=${a}&l=${b}`}">
+                <span class="check">${done ? "✓" : ""}</span>
+                <span>${locked ? "🔒 " : ""}${l.title}</span>
+                <span class="sl-dur">${l.dur}</span>
+              </button>`;
+            }).join("")}
+            ${m.quiz ? `<button class="side-lesson ${showQuiz && a === mi ? "current" : ""}" data-url="${enrolled ? `lesson.html?course=${course.id}&m=${a}&quiz=1` : ""}">
+              <span class="check">📝</span><span>${enrolled ? "" : "🔒 "}${m.quiz.title}</span>
+            </button>` : ""}
+          </div>`).join("")}`;
+
+      document.querySelectorAll(".side-lesson").forEach(b => {
+        b.addEventListener("click", () => {
+          if (b.dataset.url) location.href = b.dataset.url;
+          else UI.toast("🔒 سجّل في الدورة للوصول لهذا المحتوى");
+        });
+      });
+    }
+    renderSide();
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دليل المسؤولين والمعلمين — أكاديمية سهاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📸</text></svg>" />
+  <style>
+    .doc { max-width: 860px; margin: 0 auto; padding: 50px 22px 80px; }
+    .doc h1 { font-size: 1.8rem; margin-bottom: 10px; }
+    .doc .lead { color: var(--text-2); margin-bottom: 40px; }
+    .doc h2 { font-size: 1.3rem; color: var(--gold-2); margin: 40px 0 14px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .doc h3 { font-size: 1.05rem; margin: 22px 0 10px; }
+    .doc p, .doc li { color: var(--text-2); font-size: 0.95rem; }
+    .doc ul, .doc ol { padding-right: 24px; margin-bottom: 14px; }
+    .doc li { margin-bottom: 7px; }
+    .doc code { background: var(--bg-3); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 0.85rem; direction: ltr; display: inline-block; color: var(--gold-2); }
+    .doc pre { background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 18px; overflow-x: auto; direction: ltr; text-align: left; font-size: 0.82rem; color: var(--text-2); margin-bottom: 14px; }
+    .note { background: var(--gold-soft); border: 1px solid rgba(212,167,44,0.35); border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 0.9rem; color: var(--gold-2); }
+    .toc { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 26px; margin-bottom: 20px; }
+    .toc a { color: var(--text-2); } .toc a:hover { color: var(--gold-2); }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <main>
+    <div class="doc">
+      <h1>📖 دليل المسؤولين والمعلمين</h1>
+      <p class="lead">كل ما يحتاجه فريق الأكاديمية لإدارة المنصة: إضافة الدورات وتعديل المحتوى، وإدارة الطلاب، وفهم بنية النظام والانتقال إلى بيئة الإنتاج.</p>
+
+      <div class="toc">
+        <b>المحتويات</b>
+        <ol>
+          <li><a href="#arch">بنية المنصة</a></li>
+          <li><a href="#courses">إدارة الدورات (إضافة / تعديل / حذف)</a></li>
+          <li><a href="#lessons">إدارة الدروس والاختبارات والمشاريع</a></li>
+          <li><a href="#pricing">إدارة الأسعار والباقات</a></li>
+          <li><a href="#students">حسابات الطلاب والتقدّم والشهادات</a></li>
+          <li><a href="#production">الانتقال إلى الإنتاج (خادم + دفع حقيقي)</a></li>
+        </ol>
+      </div>
+
+      <h2 id="arch">1. بنية المنصة</h2>
+      <p>المنصة الحالية نسخة أمامية متكاملة (Frontend) لا تتطلب خادمًا، ما يجعلها قابلة للنشر فورًا على أي استضافة ثابتة (GitHub Pages، Netlify، Vercel). البيانات التجريبية للطلاب تُخزَّن في متصفح المستخدم عبر <code>localStorage</code>.</p>
+      <ul>
+        <li><code>index.html</code> — الصفحة الرئيسية (البطل، المزايا، الدورات، المسارات، المدربون، الآراء، الأسئلة).</li>
+        <li><code>courses.html</code> — كتالوج الدورات مع بحث وفلاتر.</li>
+        <li><code>course.html?id=…</code> — صفحة تفاصيل الدورة والمنهج.</li>
+        <li><code>lesson.html?course=…&m=…&l=…</code> — مشغّل الدروس مع تتبع التقدّم، و<code>&quiz=1</code> للاختبارات.</li>
+        <li><code>register.html / login.html</code> — التسجيل والدخول.</li>
+        <li><code>dashboard.html</code> — لوحة الطالب: الدورات، الشهادات، المدفوعات، الملف الشخصي.</li>
+        <li><code>pricing.html / checkout.html</code> — الباقات وصفحة الدفع (محاكاة).</li>
+        <li><code>assets/js/data.js</code> — <b>قلب المحتوى:</b> جميع الدورات والمناهج والأسعار.</li>
+        <li><code>assets/js/app.js</code> — منطق الحسابات والتسجيل والتقدّم والشهادات.</li>
+        <li><code>assets/css/style.css</code> — نظام التصميم الكامل.</li>
+      </ul>
+
+      <h2 id="courses">2. إدارة الدورات</h2>
+      <h3>إضافة دورة جديدة</h3>
+      <p>افتح <code>assets/js/data.js</code> وأضف كائنًا جديدًا داخل مصفوفة <code>COURSES</code> بهذه البنية:</p>
+      <pre>{
+  id: "wedding",                    // معرّف فريد بالإنجليزية (يظهر في الرابط)
+  title: "تصوير حفلات الزفاف",       // اسم الدورة
+  category: "مناسبات",              // التصنيف (يظهر في الفلاتر تلقائيًا)
+  level: "متقدم",                   // مبتدئ | متوسط | متقدم
+  price: 79, oldPrice: 99,          // السعر والسعر قبل الخصم (اختياري)
+  free: false,                      // اجعلها true لدورة مجانية
+  rating: 4.8, students: 0, hours: 12, lessonsCount: 24,
+  instructor: "khaled",             // معرّف مدرّب من INSTRUCTORS
+  gradient: ["#1a1a2e", "#c9a227"], // لونا خلفية البطاقة
+  icon: "💍",                       // أيقونة البطاقة
+  short: "وصف قصير يظهر في البطاقة",
+  goals: ["الهدف الأول", "الهدف الثاني"],
+  modules: [ /* الوحدات — انظر القسم التالي */ ],
+}</pre>
+      <div class="note">💡 بعد الحفظ ورفع التعديل، تظهر الدورة تلقائيًا في الكتالوج والفلاتر والصفحة الرئيسية دون أي خطوة إضافية.</div>
+      <h3>تعديل أو حذف دورة</h3>
+      <ul>
+        <li><b>التعديل:</b> عدّل حقول الكائن مباشرة (السعر، الوصف، الدروس…).</li>
+        <li><b>الحذف:</b> احذف الكائن من المصفوفة. تأكد من إزالة معرّفها من مصفوفات <code>TRACKS</code> إن كانت ضمن مسار.</li>
+      </ul>
+
+      <h2 id="lessons">3. إدارة الدروس والاختبارات والمشاريع</h2>
+      <h3>بنية الوحدة</h3>
+      <pre>{
+  title: "الوحدة الأولى: العنوان",
+  lessons: [
+    { title: "عنوان الدرس", dur: "18د",
+      freePreview: true,          // اختياري: معاينة مجانية لغير المسجلين
+      project: true,              // اختياري: يميّز الدرس كمشروع عملي
+      content: "النص التعليمي المرافق للفيديو…" },
+  ],
+  quiz: {                          // اختياري: اختبار نهاية الوحدة
+    title: "اختبار الوحدة",
+    questions: [
+      { q: "نص السؤال؟", options: ["أ", "ب", "ج", "د"], answer: 1 },
+      // answer = رقم الخيار الصحيح (يبدأ من 0)
+    ],
+  },
+}</pre>
+      <h3>رفع الفيديوهات</h3>
+      <p>في النسخة التجريبية يظهر إطار فيديو تجريبي. عند توفر المحتوى:</p>
+      <ol>
+        <li>ارفع الفيديو إلى مزوّد بث (Vimeo Pro، Bunny Stream، Cloudflare Stream — كلها تدعم حماية المحتوى).</li>
+        <li>أضف حقل <code>video: "رابط التضمين"</code> إلى كائن الدرس.</li>
+        <li>في <code>lesson.html</code> استبدل <code>div.video-frame</code> بعنصر <code>iframe</code> يقرأ الحقل الجديد.</li>
+      </ol>
+      <h3>قواعد الشهادات</h3>
+      <p>تصدر الشهادة تلقائيًا برمز تحقق فريد عندما: يُكمل الطالب 100% من الدروس <b>و</b> يجتاز كل اختبارات الدورة بنسبة 60% فأكثر. يمكن تعديل النسبة في دالة <code>maybeIssueCertificate</code> داخل <code>app.js</code>.</p>
+
+      <h2 id="pricing">4. إدارة الأسعار والباقات</h2>
+      <ul>
+        <li><b>سعر دورة:</b> حقل <code>price</code> في كائن الدورة، و<code>oldPrice</code> لإظهار خصم.</li>
+        <li><b>الباقات:</b> مصفوفة <code>PLANS</code> في <code>data.js</code> — عدّل الأسعار والمزايا ومدد الاشتراك.</li>
+        <li><b>الاشتراك النشط</b> يفتح جميع الدورات تلقائيًا (منطق <code>Enroll.isEnrolled</code>).</li>
+      </ul>
+
+      <h2 id="students">5. حسابات الطلاب والتقدّم والشهادات</h2>
+      <ul>
+        <li>حسابات الطلاب في النسخة التجريبية محلية في متصفح كل مستخدم (<code>localStorage</code>) تحت المفاتيح <code>sahab_users</code> و<code>sahab_session</code>.</li>
+        <li>يتتبع النظام: الدروس المكتملة، نتائج الاختبارات، الشهادات، المدفوعات، وحالة الاشتراك.</li>
+        <li>الطالب يدير كل شيء من <code>dashboard.html</code>: متابعة التقدم، عرض وطباعة الشهادات، سجل الفواتير، إلغاء التجديد.</li>
+      </ul>
+
+      <h2 id="production">6. الانتقال إلى الإنتاج</h2>
+      <div class="note">⚠️ النسخة الحالية مثالية للعرض والتحقق من التجربة. قبل استقبال طلاب ومدفوعات حقيقية، نفّذ الخطوات التالية.</div>
+      <h3>الخلفية (Backend)</h3>
+      <ol>
+        <li>أنشئ خدمة API (يوصى بـ Laravel أو Node.js/Express أو Django) بقاعدة بيانات PostgreSQL أو MySQL.</li>
+        <li>انقل بيانات <code>data.js</code> إلى جداول: <code>courses</code>، <code>modules</code>، <code>lessons</code>، <code>quizzes</code>، <code>users</code>، <code>enrollments</code>، <code>progress</code>، <code>certificates</code>، <code>payments</code>.</li>
+        <li>استبدل كائنات <code>Auth / Enroll / Payments</code> في <code>app.js</code> بنداءات <code>fetch</code> إلى الـ API مع جلسات JWT وتجزئة bcrypt لكلمات المرور.</li>
+      </ol>
+      <h3>الدفع الحقيقي</h3>
+      <ol>
+        <li>أنشئ حسابات لدى بوابة عالمية (Stripe / PayPal) وبوابة إقليمية للمدفوعات المحلية (مثل Moyasar / Tap / Paymob) حسب أسواقك.</li>
+        <li>استبدل محاكاة <code>checkout.html</code> بجلسات دفع من الخادم (Stripe Checkout مثلًا) — لا تُدخل بيانات البطاقات في صفحاتك مطلقًا.</li>
+        <li>فعّل Webhooks لتأكيد الدفع وتفعيل التسجيل/الاشتراك من الخادم.</li>
+      </ol>
+      <h3>الأمان والنشر</h3>
+      <ul>
+        <li>شهادة SSL إلزامية (مجانية عبر Let's Encrypt أو تلقائية على Netlify/Vercel/Cloudflare).</li>
+        <li>حماية DDoS وCDN عبر Cloudflare.</li>
+        <li>ربط Google Analytics 4 وSearch Console، وإضافة <code>sitemap.xml</code> عند اكتمال الصفحات.</li>
+        <li>نسخ احتياطي يومي لقاعدة البيانات، وبيئة staging منفصلة للتجارب.</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    // مسارات النسخة داخل مجلد docs
+    renderNav();
+    renderFooter();
+    document.querySelectorAll('#navbar a, #footer a').forEach(a => {
+      const href = a.getAttribute("href");
+      if (href && !href.startsWith("http") && !href.startsWith("#") && !href.startsWith("../") && !href.startsWith("docs/")) {
+        a.setAttribute("href", "../" + href);
+      } else if (href && href.startsWith("docs/")) {
+        a.setAttribute("href", href.replace("docs/", ""));
+      }
+    });
+  </script>
+</body>
+</html>

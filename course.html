@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تفاصيل الدورة — أكاديمية سهاب</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📸</text></svg>" />
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <main>
+    <header class="course-hero">
+      <div class="container course-hero-grid" id="heroGrid"></div>
+    </header>
+
+    <section style="padding-bottom:76px">
+      <div class="container course-hero-grid">
+        <div>
+          <div class="goals-box" id="goalsBox"></div>
+          <div class="curriculum" id="curriculum"></div>
+        </div>
+        <div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    renderNav("courses");
+    renderFooter();
+
+    const course = getCourse(qs("id")) || COURSES[0];
+    const inst = getInstructor(course.instructor);
+    const user = Auth.current();
+    const enrolled = Enroll.isEnrolled(user, course.id);
+    const progress = user ? Enroll.courseProgress(user, course) : 0;
+    document.title = `${course.title} — أكاديمية سهاب`;
+
+    const totalLessons = courseLessonsTotal(course);
+    const totalQuizzes = courseQuizzesTotal(course);
+
+    let ctaHtml;
+    if (enrolled) {
+      ctaHtml = `
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="fill" style="width:${progress}%"></div></div>
+          <span>أكملت ${progress}% من الدورة</span>
+        </div>
+        <a href="lesson.html?course=${course.id}&m=0&l=0" class="btn btn-gold btn-lg btn-block">${progress > 0 ? "أكمل التعلّم" : "ابدأ التعلّم الآن"}</a>`;
+    } else if (course.free) {
+      ctaHtml = `<a href="#" id="enrollFree" class="btn btn-green btn-lg btn-block">سجّل مجانًا الآن</a>`;
+    } else {
+      ctaHtml = `
+        <a href="checkout.html?course=${course.id}" class="btn btn-gold btn-lg btn-block">اشترِ الدورة</a>
+        <a href="pricing.html" class="btn btn-outline btn-block" style="margin-top:10px">أو اشترك بالباقة الشاملة</a>`;
+    }
+
+    document.getElementById("heroGrid").innerHTML = `
+      <div>
+        <nav class="breadcrumbs"><a href="index.html">الرئيسية</a> / <a href="courses.html">الدورات</a> / ${course.category}</nav>
+        <span class="badge-pill">${course.category} · ${course.level}</span>
+        <h1 style="margin-top:14px">${course.title}</h1>
+        <p class="short">${course.short}</p>
+        <div class="meta-row">
+          <span class="rating">★ ${course.rating}</span>
+          <span>👥 ${course.students.toLocaleString("ar")} طالب</span>
+          <span>🎬 ${totalLessons} درسًا</span>
+          <span>⏱️ ${course.hours} ساعة تعليمية</span>
+          <span>📝 ${totalQuizzes} اختبارات</span>
+        </div>
+        <div class="instructor-row">
+          <span class="avatar" style="background:${inst.color}22;color:${inst.color};border-color:${inst.color}55">${inst.initials}</span>
+          <div><b>${inst.name}</b><div style="color:var(--text-3);font-size:0.85rem">${inst.title}</div></div>
+        </div>
+      </div>
+      <aside class="buy-card">
+        <div class="buy-thumb" style="background:linear-gradient(140deg, ${course.gradient[0]}, ${course.gradient[1]})">${course.icon}</div>
+        <div class="buy-price">${course.free ? '<span style="color:var(--green)">مجاني بالكامل</span>' : (course.oldPrice ? `<span class="old" style="font-size:1.1rem;color:var(--text-3);text-decoration:line-through">$${course.oldPrice}</span> ` : "") + "$" + course.price}</div>
+        ${ctaHtml}
+        ${!course.free && !enrolled ? '<p class="buy-note">🛡️ ضمان استرداد كامل خلال 14 يومًا</p>' : ""}
+        <ul class="buy-includes">
+          <li>♾️ وصول مدى الحياة وتحديثات مجانية</li>
+          <li>🎬 ${totalLessons} درس فيديو + ملفات مرافقة</li>
+          <li>📝 اختبارات تفاعلية بعد كل وحدة</li>
+          <li>🛠️ مشاريع عملية بمراجعة المدرّب</li>
+          <li>💬 منتدى نقاش خاص بالدورة</li>
+          <li>🏅 شهادة إتمام موثّقة برمز تحقق</li>
+        </ul>
+      </aside>`;
+
+    document.getElementById("goalsBox").innerHTML = `
+      <h2>ماذا ستتعلم في هذه الدورة؟</h2>
+      <ul>${course.goals.map(g => `<li>${g}</li>`).join("")}</ul>`;
+
+    document.getElementById("curriculum").innerHTML = `
+      <h2>منهج الدورة <span style="color:var(--text-3);font-size:0.85rem;font-weight:400">(${course.modules.length} وحدات · ${totalLessons} درسًا)</span></h2>
+      ${course.modules.map((m, mi) => `
+        <details class="module" ${mi === 0 ? "open" : ""}>
+          <summary>${m.title}<span class="mod-meta">${m.lessons.length} دروس${m.quiz ? " + اختبار" : ""}</span></summary>
+          ${m.lessons.map((l, li) => {
+            const done = user && Enroll.isLessonDone(user, course.id, mi, li);
+            const canOpen = enrolled || l.freePreview;
+            const inner = `
+              <span class="l-icon">${done ? "✅" : (canOpen ? "▶" : "🔒")}</span>
+              <span class="l-title">${l.title}</span>
+              ${l.freePreview && !enrolled ? '<span class="tag preview">معاينة مجانية</span>' : ""}
+              ${l.project ? '<span class="tag project">مشروع عملي</span>' : ""}
+              <span class="l-dur">${l.dur}</span>`;
+            return canOpen
+              ? `<a class="lesson-row ${done ? "done" : ""}" href="lesson.html?course=${course.id}&m=${mi}&l=${li}">${inner}</a>`
+              : `<div class="lesson-row">${inner}</div>`;
+          }).join("")}
+          ${m.quiz ? `<div class="lesson-row"><span class="l-icon">📝</span><span class="l-title">${m.quiz.title}</span><span class="tag quiz">${m.quiz.questions.length} أسئلة</span></div>` : ""}
+        </details>`).join("")}`;
+
+    const freeBtn = document.getElementById("enrollFree");
+    if (freeBtn) freeBtn.addEventListener("click", e => {
+      e.preventDefault();
+      const u = Auth.current();
+      if (!u) { location.href = "register.html?next=" + encodeURIComponent("course.html?id=" + course.id); return; }
+      Enroll.enroll(u, course.id);
+      UI.toast("🎉 تم تسجيلك في الدورة بنجاح!");
+      setTimeout(() => location.reload(), 900);
+    });
+  </script>
+</body>
+</html>

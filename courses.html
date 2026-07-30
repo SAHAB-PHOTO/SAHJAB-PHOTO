@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جميع الدورات — أكاديمية سهاب للتصوير الفوتوغرافي</title>
+  <meta name="description" content="تصفّح مكتبة دورات التصوير الفوتوغرافي بالعربية: أساسيات، بورتريه، طبيعة، منتجات، معالجة رقمية والمزيد." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📸</text></svg>" />
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <main>
+    <section class="section" style="padding-top:54px">
+      <div class="container">
+        <div class="section-head" style="margin-bottom:36px">
+          <span class="kicker">مكتبة الأكاديمية</span>
+          <h2>جميع الدورات</h2>
+          <p>ابحث وصفِّ حسب التخصص والمستوى لتجد دورتك القادمة.</p>
+        </div>
+
+        <div class="filters-bar">
+          <input type="search" id="searchInput" placeholder="🔍 ابحث عن دورة…" />
+          <div id="catChips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+        <div class="filters-bar" style="margin-top:-18px">
+          <span style="color:var(--text-3);font-size:0.85rem">المستوى:</span>
+          <div id="levelChips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+
+        <div class="courses-grid" id="coursesGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none">
+          <div class="big">🔍</div>
+          <p>لا توجد دورات تطابق بحثك. جرّب كلمات أو فلاتر مختلفة.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footer"></footer>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    renderNav("courses");
+    renderFooter();
+
+    const cats = ["الكل", ...new Set(COURSES.map(c => c.category))];
+    const levels = ["الكل", "مبتدئ", "متوسط", "متقدم"];
+    let activeCat = "الكل", activeLevel = "الكل", term = "";
+
+    function chip(label, active, onClick) {
+      const b = document.createElement("button");
+      b.className = "chip" + (active ? " active" : "");
+      b.textContent = label;
+      b.addEventListener("click", onClick);
+      return b;
+    }
+
+    function renderChips() {
+      const catBox = document.getElementById("catChips");
+      const lvlBox = document.getElementById("levelChips");
+      catBox.innerHTML = ""; lvlBox.innerHTML = "";
+      cats.forEach(c => catBox.appendChild(chip(c, c === activeCat, () => { activeCat = c; render(); })));
+      levels.forEach(l => lvlBox.appendChild(chip(l, l === activeLevel, () => { activeLevel = l; render(); })));
+    }
+
+    function render() {
+      renderChips();
+      const list = COURSES.filter(c =>
+        (activeCat === "الكل" || c.category === activeCat) &&
+        (activeLevel === "الكل" || c.level === activeLevel) &&
+        (term === "" || (c.title + c.short + c.category).includes(term))
+      );
+      document.getElementById("coursesGrid").innerHTML = list.map(UI.courseCard).join("");
+      document.getElementById("emptyState").style.display = list.length ? "none" : "block";
+    }
+
+    document.getElementById("searchInput").addEventListener("input", e => { term = e.target.value.trim(); render(); });
+    render();
+  </script>
+</body>
+</html>
